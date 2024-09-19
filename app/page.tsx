@@ -189,37 +189,60 @@ export default function Home() {
   const handleBack = () => {
     setShowPostEntry(false);
     if (cameraRef.current && controlsRef.current) {
-      cameraRef.current.position.set(0, 10, 15);
-      controlsRef.current.update();
+      const startPosition = cameraRef.current.position.clone();
+      const targetPosition = new THREE.Vector3(0, 10, 15);
+      const duration = 2000; // 2 seconds
+      const startTime = Date.now();
+
+      const zoomOutAnimation = () => {
+        const now = Date.now();
+        const progress = Math.min((now - startTime) / duration, 1);
+        const easeProgress = 1 - Math.pow(1 - progress, 3); // Cubic ease-out
+
+        cameraRef.current!.position.lerpVectors(startPosition, targetPosition, easeProgress);
+        controlsRef.current!.update();
+
+        if (progress < 1) {
+          requestAnimationFrame(zoomOutAnimation);
+        }
+
+        rendererRef.current!.render(sceneRef.current!, cameraRef.current!);
+      };
+
+      zoomOutAnimation();
     }
   };
 
   return (
-    <main className="relative flex min-h-screen flex-col justify-between bg-black text-white overflow-hidden p-4">
+    <main className="relative flex flex-col justify-between bg-black text-white overflow-hidden h-screen">
       <div ref={mountRef} className="absolute inset-0" />
       <div className={`absolute inset-0 flex items-center justify-center transition-opacity duration-1000 ${isLoading ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
         <div className="text-4xl font-bold">Loading...</div>
       </div>
-      {!showPostEntry && (
-        <div className="z-10 w-full">
-          <h1 className="text-2xl md:text-4xl font-bold tracking-wider mt-8">thespot.lol</h1>
+      <div className="relative z-10 flex flex-col justify-between h-full p-4">
+        {!showPostEntry && (
+          <div className="w-full">
+            <h1 className="text-2xl md:text-4xl font-bold tracking-wider">thespot.lol</h1>
+          </div>
+        )}
+        <div className="flex justify-between items-end w-full">
+          <div>
+            {!showPostEntry && (
+              <Button 
+                className="px-4 py-2 bg-white text-black rounded hover:bg-gray-200 transition-colors"
+                onClick={handleEnter}
+              >
+                Enter
+              </Button>
+            )}
+          </div>
+          <p className="text-sm md:text-xl tracking-wide">Riverside, CA</p>
         </div>
-      )}
-      <div className="flex justify-between items-end w-full z-10">
-        <div>
-          {!showPostEntry && (
-            <Button 
-              className="px-4 py-2 bg-white text-black rounded hover:bg-gray-200 transition-colors"
-              onClick={handleEnter}
-            >
-              Enter
-            </Button>
-          )}
-        </div>
-        <p className="text-sm md:text-xl tracking-wide">Riverside, CA</p>
       </div>
       {showPostEntry && (
-        <PostEntry onBack={handleBack} />
+        <div className="absolute inset-0 z-20">
+          <PostEntry onBack={handleBack} />
+        </div>
       )}
     </main>
   );
