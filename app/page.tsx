@@ -18,8 +18,18 @@ export default function Home() {
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     mountRef.current.appendChild(renderer.domElement);
 
-    // Create a minimalist terrain
-    const geometry = new THREE.PlaneGeometry(20, 20, 32, 32);
+    // Create a topographical terrain
+    const geometry = new THREE.PlaneGeometry(20, 20, 128, 128);
+    const positions = geometry.attributes.position;
+    for (let i = 0; i < positions.count; i++) {
+      const x = positions.getX(i);
+      const y = positions.getY(i);
+      const z = Math.sin(x * 0.5) * Math.sin(y * 0.5) * 2 +
+                Math.sin(x * 0.25) * Math.sin(y * 0.25) * 1.5;
+      positions.setZ(i, z);
+    }
+    geometry.computeVertexNormals();
+
     const material = new THREE.MeshBasicMaterial({
       color: 0xffffff,
       wireframe: true,
@@ -30,26 +40,74 @@ export default function Home() {
     terrain.rotation.x = -Math.PI / 2;
     scene.add(terrain);
 
+    // Create the hiking trail
+    const curve = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(-8, 0.5, -8),
+      new THREE.Vector3(-4, 1, -4),
+      new THREE.Vector3(0, 1.5, 0),
+      new THREE.Vector3(4, 2, 4),
+      new THREE.Vector3(8, 2.5, 8),
+    ]);
+
+    const points = curve.getPoints(200);
+    const trailGeometry = new THREE.BufferGeometry();
+    const trailMaterial = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0 });
+    const trail = new THREE.Line(trailGeometry, trailMaterial);
+    scene.add(trail);
+
     // Add a pulsating sphere to represent "the spot"
     const sphereGeometry = new THREE.SphereGeometry(0.5, 32, 32);
     const sphereMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
     const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
-    sphere.position.set(0, 0.5, 0);
+    sphere.position.set(8, 3, 8);
     scene.add(sphere);
 
-    camera.position.set(0, 5, 10);
+    camera.position.set(0, 15, 20);
 
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.05;
-    controls.enableZoom = false;
+    controls.enableZoom = true;
+    controls.minDistance = 10;
+    controls.maxDistance = 30;
     controls.autoRotate = true;
     controls.autoRotateSpeed = 0.5;
 
+    let trailProgress = 0;
+    const dashSize = 0.2;
+    const gapSize = 0.1;
     const animate = () => {
       requestAnimationFrame(animate);
       controls.update();
       
+      // Animate the trail
+      trailProgress += 0.001;
+      trailProgress = Math.min(trailProgress, 1);
+      trailMaterial.opacity = trailProgress;
+
+      // Update trail vertices visibility with dashed effect
+      const visiblePoints = [];
+      let accumulatedLength = 0;
+      let isDash = true;
+      for (let i = 0; i < points.length; i++) {
+        if (accumulatedLength / curve.getLength() > trailProgress) break;
+        
+        if (isDash) {
+          visiblePoints.push(points[i]);
+        }
+        
+        if (i < points.length - 1) {
+          const segmentLength = points[i].distanceTo(points[i + 1]);
+          accumulatedLength += segmentLength;
+          if (isDash && accumulatedLength % (dashSize + gapSize) > dashSize) {
+            isDash = false;
+          } else if (!isDash && accumulatedLength % (dashSize + gapSize) <= dashSize) {
+            isDash = true;
+          }
+        }
+      }
+      trailGeometry.setFromPoints(visiblePoints);
+
       // Pulsate the sphere
       const scale = 1 + Math.sin(Date.now() * 0.003) * 0.1;
       sphere.scale.set(scale, scale, scale);
