@@ -6,6 +6,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import PostEntry from './components/PostEntry';
 import { Button } from "@/components/ui/button"
 import { motion, AnimatePresence } from 'framer-motion';
+import { useMediaQuery } from 'react-responsive';
 
 export default function Home() {
   const mountRef = useRef<HTMLDivElement>(null);
@@ -15,6 +16,7 @@ export default function Home() {
   const controlsRef = useRef<OrbitControls | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showPostEntry, setShowPostEntry] = useState(false);
+  const isMobile = useMediaQuery({ maxWidth: 767 });
 
   useEffect(() => {
     if (!mountRef.current) return;
@@ -134,10 +136,18 @@ export default function Home() {
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
         renderer.setSize(window.innerWidth, window.innerHeight);
+        
+        // Adjust camera position for mobile
+        if (isMobile) {
+          camera.position.set(0, 15, 20); // Zoom out more on mobile
+        } else {
+          camera.position.set(0, 10, 15);
+        }
       }
     };
 
     window.addEventListener('resize', handleResize);
+    handleResize(); // Call once to set initial size
 
     // Simulate loading
     setTimeout(() => setIsLoading(false), 2000);
@@ -146,7 +156,7 @@ export default function Home() {
       window.removeEventListener('resize', handleResize);
       mountRef.current?.removeChild(renderer.domElement);
     };
-  }, []);
+  }, [isMobile]);
 
   const handleEnter = () => {
     if (cameraRef.current && controlsRef.current) {
@@ -185,23 +195,25 @@ export default function Home() {
   };
 
   return (
-    <main className="relative flex min-h-screen flex-col items-center justify-center bg-black text-white overflow-hidden">
+    <main className="relative flex min-h-screen flex-col items-center justify-between bg-black text-white overflow-hidden p-4">
       <div ref={mountRef} className="absolute inset-0" />
       <div className={`absolute inset-0 flex items-center justify-center transition-opacity duration-1000 ${isLoading ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
         <div className="text-4xl font-bold">Loading...</div>
       </div>
       {!showPostEntry && (
-        <h1 className="absolute top-4 left-4 text-2xl md:text-4xl font-bold tracking-wider z-10">thespot.lol</h1>
+        <h1 className="text-2xl md:text-4xl font-bold tracking-wider z-10 mb-4">thespot.lol</h1>
       )}
-      <p className="absolute bottom-4 right-4 text-sm md:text-xl tracking-wide z-10">Riverside, CA</p>
-      {!showPostEntry && (
-        <Button 
-          className="absolute bottom-4 left-4 px-4 py-2 bg-white text-black rounded hover:bg-gray-200 transition-colors z-10"
-          onClick={handleEnter}
-        >
-          Enter
-        </Button>
-      )}
+      <div className="flex flex-col items-center justify-center z-10 space-y-4">
+        {!showPostEntry && (
+          <Button 
+            className="px-4 py-2 bg-white text-black rounded hover:bg-gray-200 transition-colors"
+            onClick={handleEnter}
+          >
+            Enter
+          </Button>
+        )}
+        <p className="text-sm md:text-xl tracking-wide">Riverside, CA</p>
+      </div>
       {showPostEntry && (
         <PostEntry onBack={handleBack} />
       )}
