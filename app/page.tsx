@@ -437,9 +437,12 @@ export default function Home() {
   const handleClosePhoto = () => {
     setSelectedPhoto(null);
     if (cameraRef.current && controlsRef.current) {
-      const targetPosition = new THREE.Vector3(0, 10, 15);
+      const currentPosition = cameraRef.current.position.clone();
+      const direction = currentPosition.clone().normalize();
+      const targetPosition = direction.multiplyScalar(15); // Keep the same direction, but set distance to 15
+
       const duration = 1000; // 1 second
-      const startPosition = cameraRef.current.position.clone();
+      const startPosition = currentPosition;
       const startTime = Date.now();
 
       const zoomOutAnimation = () => {
