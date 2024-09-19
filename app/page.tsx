@@ -150,17 +150,6 @@ export default function Home() {
       const scale = 1 + Math.sin(Date.now() * 0.003) * 0.1;
       sphere.scale.set(scale, scale, scale);
 
-      // Update photo icon hover effect
-      photos.forEach(photo => {
-        if (photo.mesh) {
-          if (hoveredPhoto === photo) {
-            photo.mesh.scale.setScalar(1.2); // Increase size on hover
-          } else {
-            photo.mesh.scale.setScalar(1); // Reset size
-          }
-        }
-      });
-
       renderer.render(scene, camera);
     };
 
@@ -228,7 +217,9 @@ export default function Home() {
       let hoveredPhotoFound = false;
       for (let i = 0; i < intersects.length; i++) {
         const intersectedObject = intersects[i].object;
-        const hoveredPhoto = photos.find(photo => photo.mesh === intersectedObject);
+        const hoveredPhoto = photos.find(photo => 
+          photo.hitboxMesh === intersectedObject || photo.mesh === intersectedObject
+        );
         if (hoveredPhoto) {
           setHoveredPhoto(hoveredPhoto);
           hoveredPhotoFound = true;
@@ -258,7 +249,7 @@ export default function Home() {
       window.removeEventListener('click', onMouseClick);
       mountRef.current?.removeChild(renderer.domElement);
     };
-  }, [isMobile, photos, hoveredPhoto]);
+  }, [isMobile, photos]);
 
   const handleEnter = () => {
     if (cameraRef.current && controlsRef.current) {
