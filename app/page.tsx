@@ -16,6 +16,7 @@ interface Photo {
   position: THREE.Vector3;
   caption: string;
   mesh?: THREE.Mesh;
+  hitboxMesh?: THREE.Mesh;
 }
 
 export default function Home() {
@@ -39,7 +40,7 @@ export default function Home() {
   const [hoveredPhoto, setHoveredPhoto] = useState<Photo | null>(null);
 
   const [showCoordinates, setShowCoordinates] = useState(false);
-  const coordinates = { lat: 33.884132, lng: -117.472707 };
+  const coordinates = { lat: 33.8842844, lng: -117.4729111 };
 
   useEffect(() => {
     if (!mountRef.current) return;
@@ -186,18 +187,28 @@ export default function Home() {
     // Simulate loading
     setTimeout(() => setIsLoading(false), 2000);
 
-    // Create photo icons
+    // Create photo icons with larger hitbox
     const iconGeometry = new THREE.SphereGeometry(0.2, 32, 32);
     const iconMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
+    const hitboxGeometry = new THREE.SphereGeometry(0.5, 32, 32); // Larger invisible hitbox
+    const hitboxMaterial = new THREE.MeshBasicMaterial({ 
+      color: 0xffffff, 
+      transparent: true, 
+      opacity: 0 
+    });
 
     photos.forEach(photo => {
       const photoMesh = new THREE.Mesh(iconGeometry, iconMaterial);
       photoMesh.position.copy(photo.position);
       scene.add(photoMesh);
-      console.log(`Added photo icon at position: ${photo.position.x}, ${photo.position.y}, ${photo.position.z}`);
 
-      // Add the mesh to the photo object for later reference
-      (photo as Photo & { mesh: THREE.Mesh }).mesh = photoMesh;
+      const hitboxMesh = new THREE.Mesh(hitboxGeometry, hitboxMaterial);
+      hitboxMesh.position.copy(photo.position);
+      scene.add(hitboxMesh);
+
+      // Add both meshes to the photo object for later reference
+      (photo as Photo & { mesh: THREE.Mesh, hitboxMesh: THREE.Mesh }).mesh = photoMesh;
+      (photo as Photo & { mesh: THREE.Mesh, hitboxMesh: THREE.Mesh }).hitboxMesh = hitboxMesh;
     });
 
     // Force a re-render of the scene
@@ -234,7 +245,7 @@ export default function Home() {
 
     const onMouseClick = (event: MouseEvent) => {
       if (hoveredPhoto) {
-        handlePhotoClick(hoveredPhoto);
+        handlePhotoClick(event);
       }
     };
 
@@ -304,32 +315,52 @@ export default function Home() {
     }
   };
 
-  const handlePhotoClick = (photo: Photo) => {
-    if (cameraRef.current && controlsRef.current) {
-      const targetPosition = photo.position.clone().add(new THREE.Vector3(0, 0, 2));
-      const duration = 1000; // 1 second
-      const startPosition = cameraRef.current.position.clone();
-      const startTime = Date.now();
+  const handlePhotoClick = (event: MouseEvent) => {
+    if (cameraRef.current && controlsRef.current && sceneRef.current) {
+      const mouse = new THREE.Vector2(
+        (event.clientX / window.innerWidth) * 2 - 1,
+        -(event.clientY / window.innerHeight) * 2 + 1
+      );
 
-      const zoomAnimation = () => {
-        const now = Date.now();
-        const progress = Math.min((now - startTime) / duration, 1);
-        const easeProgress = 1 - Math.pow(1 - progress, 3); // Cubic ease-out
+      const raycaster = new THREE.Raycaster();
+      raycaster.setFromCamera(mouse, cameraRef.current);
 
-        cameraRef.current!.position.lerpVectors(startPosition, targetPosition, easeProgress);
-        controlsRef.current!.target.copy(photo.position);
-        controlsRef.current!.update();
+      const intersects = raycaster.intersectObjects(sceneRef.current.children, true);
+      
+      for (let i = 0; i < intersects.length; i++) {
+        const intersectedObject = intersects[i].object;
+        const clickedPhoto = photos.find(photo => 
+          photo.hitboxMesh === intersectedObject || photo.mesh === intersectedObject
+        );
+        
+        if (clickedPhoto) {
+          const targetPosition = clickedPhoto.position.clone().add(new THREE.Vector3(0, 0, 2));
+          const duration = 1000; // 1 second
+          const startPosition = cameraRef.current.position.clone();
+          const startTime = Date.now();
 
-        if (progress < 1) {
-          requestAnimationFrame(zoomAnimation);
-        } else {
-          setSelectedPhoto(photo);
+          const zoomAnimation = () => {
+            const now = Date.now();
+            const progress = Math.min((now - startTime) / duration, 1);
+            const easeProgress = 1 - Math.pow(1 - progress, 3); // Cubic ease-out
+
+            cameraRef.current!.position.lerpVectors(startPosition, targetPosition, easeProgress);
+            controlsRef.current!.target.copy(clickedPhoto.position);
+            controlsRef.current!.update();
+
+            if (progress < 1) {
+              requestAnimationFrame(zoomAnimation);
+            } else {
+              setSelectedPhoto(clickedPhoto);
+            }
+
+            rendererRef.current!.render(sceneRef.current!, cameraRef.current!);
+          };
+
+          zoomAnimation();
+          break;
         }
-
-        rendererRef.current!.render(sceneRef.current!, cameraRef.current!);
-      };
-
-      zoomAnimation();
+      }
     }
   };
 
@@ -358,6 +389,26 @@ export default function Home() {
       };
 
       zoomOutAnimation();
+    }
+  };
+
+  const handleCoordinateClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const userAgent = navigator.userAgent.toLowerCase();
+    const isIOS = /iphone|ipad|ipod/.test(userAgent);
+    const androidChrome = /android/.test(userAgent) && /chrome/.test(userAgent);
+    
+    const label = encodeURIComponent("End of Victoria Ave");
+    const appleUrl = `maps:?q=${coordinates.lat},${coordinates.lng}`;
+    const googleUrl = `https://www.google.com/maps/search/?api=1&query=${coordinates.lat},${coordinates.lng}&query_place_id=${label}`;
+    const fallbackUrl = `https://www.openstreetmap.org/?mlat=${coordinates.lat}&mlon=${coordinates.lng}&zoom=16`;
+
+    if (isIOS) {
+      window.location.href = appleUrl;
+    } else if (androidChrome) {
+      window.location.href = `intent://maps.google.com/maps?daddr=${coordinates.lat},${coordinates.lng}&amp;ll=;z=16&amp;q=${label}#Intent;scheme=http;package=com.google.android.apps.maps;end`;
+    } else {
+      window.open(googleUrl, '_blank');
     }
   };
 
@@ -394,10 +445,15 @@ export default function Home() {
             ← Back
           </Button>
           <div className="text-center">
-            <Link href={`https://www.google.com/maps/search/?api=1&query=${coordinates.lat},${coordinates.lng}`} target="_blank" rel="noopener noreferrer">
+            <Link 
+              href={`https://www.google.com/maps/search/?api=1&query=${coordinates.lat},${coordinates.lng}`} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              onClick={handleCoordinateClick}
+            >
               <p className="text-2xl md:text-3xl font-bold mb-2">{`${coordinates.lat.toFixed(5)}, ${coordinates.lng.toFixed(5)}`}</p>
+              <p className="text-lg md:text-xl">End of Victoria Ave</p>
             </Link>
-            <p className="text-lg md:text-xl">End of Victoria Ave</p>
           </div>
         </div>
       )}
