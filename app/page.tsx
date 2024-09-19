@@ -19,6 +19,12 @@ interface Photo {
   hitboxMesh?: THREE.Mesh;
 }
 
+// Add this interface for weather data
+interface WeatherData {
+  temperature: number;
+  description: string;
+}
+
 export default function Home() {
   const mountRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
@@ -40,6 +46,9 @@ export default function Home() {
 
   const [showCoordinates, setShowCoordinates] = useState(false);
   const coordinates = { lat: 33.8842844, lng: -117.4729111 };
+
+  // Add this new state for weather data
+  const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
 
   useEffect(() => {
     if (!mountRef.current) return;
@@ -291,6 +300,36 @@ export default function Home() {
     };
   }, [isMobile, photos]);
 
+  // Add this new useEffect for fetching weather data
+  useEffect(() => {
+    const fetchWeatherData = async () => {
+      try {
+        const response = await fetch('https://api.open-meteo.com/v1/forecast?latitude=33.95&longitude=-117.40&current_weather=true&temperature_unit=fahrenheit');
+        const data = await response.json();
+        setWeatherData({
+          temperature: data.current_weather.temperature,
+          description: getWeatherDescription(data.current_weather.weathercode)
+        });
+      } catch (error) {
+        console.error('Error fetching weather data:', error);
+      }
+    };
+
+    fetchWeatherData();
+    const intervalId = setInterval(fetchWeatherData, 600000); // Update every 10 minutes
+
+    return () => clearInterval(intervalId);
+  }, []);
+
+  // Add this helper function to get weather description
+  const getWeatherDescription = (code: number): string => {
+    if (code <= 3) return 'Clear';
+    if (code <= 48) return 'Cloudy';
+    if (code <= 67) return 'Rainy';
+    if (code <= 77) return 'Snowy';
+    return 'Stormy';
+  };
+
   const handleEnter = () => {
     if (cameraRef.current && controlsRef.current) {
       const targetPosition = new THREE.Vector3(8, 3, 8);
@@ -492,6 +531,14 @@ export default function Home() {
               Close
             </Button>
           </div>
+        </div>
+      )}
+      
+      {/* Add this new div for weather display */}
+      {weatherData && (
+        <div className="absolute top-4 right-4 text-white z-20">
+          <p className="text-lg font-bold">{`${weatherData.temperature}°F`}</p>
+          <p className="text-sm">{weatherData.description}</p>
         </div>
       )}
     </main>
