@@ -195,23 +195,29 @@ export default function Home() {
   };
 
   return (
-    <main className="relative flex min-h-screen flex-col items-center justify-center bg-black text-white overflow-hidden">
+    <main className="relative flex min-h-screen flex-col justify-between bg-black text-white overflow-hidden p-4">
       <div ref={mountRef} className="absolute inset-0" />
       <div className={`absolute inset-0 flex items-center justify-center transition-opacity duration-1000 ${isLoading ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
         <div className="text-4xl font-bold">Loading...</div>
       </div>
       {!showPostEntry && (
-        <h1 className="absolute top-4 left-4 text-2xl md:text-4xl font-bold tracking-wider z-10">thespot.lol</h1>
+        <div className="z-10 w-full">
+          <h1 className="text-2xl md:text-4xl font-bold tracking-wider mt-8">thespot.lol</h1>
+        </div>
       )}
-      <p className="absolute bottom-4 right-4 text-sm md:text-xl tracking-wide z-10">Riverside, CA</p>
-      {!showPostEntry && (
-        <Button 
-          className="absolute bottom-4 left-4 px-4 py-2 bg-white text-black rounded hover:bg-gray-200 transition-colors z-10"
-          onClick={handleEnter}
-        >
-          Enter
-        </Button>
-      )}
+      <div className="flex justify-between items-end w-full z-10">
+        <div>
+          {!showPostEntry && (
+            <Button 
+              className="px-4 py-2 bg-white text-black rounded hover:bg-gray-200 transition-colors"
+              onClick={handleEnter}
+            >
+              Enter
+            </Button>
+          )}
+        </div>
+        <p className="text-sm md:text-xl tracking-wide">Riverside, CA</p>
+      </div>
       {showPostEntry && (
         <PostEntry onBack={handleBack} />
       )}
