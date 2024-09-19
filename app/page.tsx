@@ -25,7 +25,6 @@ export default function Home() {
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const controlsRef = useRef<OrbitControls | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [showPostEntry, setShowPostEntry] = useState(false);
   const isMobile = useMediaQuery({ maxWidth: 767 });
 
@@ -173,14 +172,12 @@ export default function Home() {
     window.addEventListener('resize', handleResize);
     handleResize(); // Call once to set initial size
 
-    // Simulate loading
-    setTimeout(() => setIsLoading(false), 2000);
-
-    // Create photo icons with larger hitbox
+    // Create photo icons with larger hitbox and highlight
     const iconGeometry = new THREE.SphereGeometry(0.2, 32, 32);
     const iconMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
+    const highlightMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00 }); // Yellow highlight
     const hitboxSize = isMobile ? 1 : 0.5;
-    const hitboxGeometry = new THREE.SphereGeometry(hitboxSize, 32, 32); // Larger invisible hitbox
+    const hitboxGeometry = new THREE.SphereGeometry(hitboxSize, 32, 32);
     const hitboxMaterial = new THREE.MeshBasicMaterial({ 
       color: 0xffffff, 
       transparent: true, 
@@ -239,10 +236,47 @@ export default function Home() {
       handleInteraction();
     };
 
+    const onMouseMove = (event: MouseEvent) => {
+      mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+      mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+      raycaster.setFromCamera(mouse, camera);
+      const intersects = raycaster.intersectObjects(scene.children, true);
+
+      let hoveredPhotoFound = false;
+      photos.forEach(photo => {
+        if (photo.mesh) {
+          photo.mesh.material = iconMaterial; // Reset to default material
+        }
+      });
+
+      for (let i = 0; i < intersects.length; i++) {
+        const intersectedObject = intersects[i].object;
+        const hoveredPhoto = photos.find(photo => 
+          photo.hitboxMesh === intersectedObject || photo.mesh === intersectedObject
+        );
+        if (hoveredPhoto && hoveredPhoto.mesh) {
+          hoveredPhoto.mesh.material = highlightMaterial; // Apply highlight material
+          setHoveredPhoto(hoveredPhoto);
+          hoveredPhotoFound = true;
+          document.body.style.cursor = 'pointer';
+          break;
+        }
+      }
+
+      if (!hoveredPhotoFound) {
+        setHoveredPhoto(null);
+        document.body.style.cursor = 'default';
+      }
+
+      renderer.render(scene, camera);
+    };
+
     if (isMobile) {
       window.addEventListener('touchstart', onTouchStart);
     } else {
       window.addEventListener('click', onMouseClick);
+      window.addEventListener('mousemove', onMouseMove);
     }
 
     return () => {
@@ -251,6 +285,7 @@ export default function Home() {
         window.removeEventListener('touchstart', onTouchStart);
       } else {
         window.removeEventListener('click', onMouseClick);
+        window.removeEventListener('mousemove', onMouseMove);
       }
       mountRef.current?.removeChild(renderer.domElement);
     };
@@ -391,9 +426,6 @@ export default function Home() {
   return (
     <main className="relative bg-black text-white overflow-hidden h-screen">
       <div ref={mountRef} className="absolute inset-0" />
-      <div className={`absolute inset-0 flex items-center justify-center transition-opacity duration-1000 ${isLoading ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-        <div className="text-4xl font-bold">Loading...</div>
-      </div>
       <div className="relative z-10 flex flex-col justify-between h-full p-4 pointer-events-none">
         {!showCoordinates && (
           <div className="w-full pointer-events-auto">
