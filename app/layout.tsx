@@ -1,18 +1,12 @@
-import './globals.css'
 import type { Metadata } from 'next'
-import { Inter as FontSans } from "next/font/google"
-import { cn } from "@/lib/utils"
-import { ThemeProvider } from "@/components/ThemeProvider"
-import { ThemeToggle } from "@/components/ThemeToggle"
+import { Inter } from 'next/font/google'
+import './globals.css'
 
-const fontSans = FontSans({
-  subsets: ["latin"],
-  variable: "--font-sans",
-})
+const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'My Shadcn App',
-  description: 'Created with Next.js and Shadcn UI',
+  title: 'thespot.lol',
+  description: 'A unique hangout in Riverside, CA',
 }
 
 export default function RootLayout({
@@ -21,18 +15,11 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={cn(
-        "min-h-screen bg-background font-sans antialiased",
-        fontSans.variable
-      )}>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <div className="fixed top-4 right-4">
-            <ThemeToggle />
-          </div>
-          {children}
-        </ThemeProvider>
-      </body>
+    <html lang="en">
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+      </head>
+      <body className={inter.className}>{children}</body>
     </html>
   )
 }
