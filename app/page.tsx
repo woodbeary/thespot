@@ -225,7 +225,7 @@ export default function Home() {
             <div className="w-full pointer-events-auto">
               <h1 className="text-2xl md:text-4xl font-bold tracking-wider">thespot.lol</h1>
             </div>
-            <div className="absolute bottom-1/4 left-0 right-0 flex justify-between items-end w-full px-4">
+            <div className="absolute bottom-[15%] left-0 right-0 flex justify-between items-end w-full px-4">
               <p className="text-sm md:text-xl tracking-wide pointer-events-auto">Riverside, CA</p>
               <Button 
                 className="px-4 py-2 bg-white text-black rounded hover:bg-gray-200 transition-colors pointer-events-auto"
