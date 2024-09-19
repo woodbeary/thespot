@@ -214,21 +214,21 @@ export default function Home() {
   };
 
   return (
-    <main className="relative flex flex-col justify-between bg-black text-white overflow-hidden h-screen">
+    <main className="relative bg-black text-white overflow-hidden h-screen">
       <div ref={mountRef} className="absolute inset-0" />
       <div className={`absolute inset-0 flex items-center justify-center transition-opacity duration-1000 ${isLoading ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
         <div className="text-4xl font-bold">Loading...</div>
       </div>
-      <div className="relative z-10 flex flex-col justify-between h-full p-4">
+      <div className="relative z-10 flex flex-col justify-between h-full p-4 pointer-events-none">
         {!showPostEntry && (
           <>
-            <div className="w-full">
+            <div className="w-full pointer-events-auto">
               <h1 className="text-2xl md:text-4xl font-bold tracking-wider">thespot.lol</h1>
             </div>
-            <div className="flex justify-between items-end w-full mb-4">
-              <p className="text-sm md:text-xl tracking-wide">Riverside, CA</p>
+            <div className="absolute bottom-1/4 left-0 right-0 flex justify-between items-end w-full px-4">
+              <p className="text-sm md:text-xl tracking-wide pointer-events-auto">Riverside, CA</p>
               <Button 
-                className="px-4 py-2 bg-white text-black rounded hover:bg-gray-200 transition-colors"
+                className="px-4 py-2 bg-white text-black rounded hover:bg-gray-200 transition-colors pointer-events-auto"
                 onClick={handleEnter}
               >
                 Enter
