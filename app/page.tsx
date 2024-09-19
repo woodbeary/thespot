@@ -179,7 +179,8 @@ export default function Home() {
     // Create photo icons with larger hitbox
     const iconGeometry = new THREE.SphereGeometry(0.2, 32, 32);
     const iconMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
-    const hitboxGeometry = new THREE.SphereGeometry(0.5, 32, 32); // Larger invisible hitbox
+    const hitboxSize = isMobile ? 1 : 0.5;
+    const hitboxGeometry = new THREE.SphereGeometry(hitboxSize, 32, 32); // Larger invisible hitbox
     const hitboxMaterial = new THREE.MeshBasicMaterial({ 
       color: 0xffffff, 
       transparent: true, 
@@ -207,46 +208,50 @@ export default function Home() {
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
 
-    const onMouseMove = (event: MouseEvent) => {
-      mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-      mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+    const onTouchStart = (event: TouchEvent) => {
+      event.preventDefault();
+      const touch = event.touches[0];
+      mouse.x = (touch.clientX / window.innerWidth) * 2 - 1;
+      mouse.y = -(touch.clientY / window.innerHeight) * 2 + 1;
+      handleInteraction();
+    };
 
+    const handleInteraction = () => {
       raycaster.setFromCamera(mouse, camera);
       const intersects = raycaster.intersectObjects(scene.children, true);
 
-      let hoveredPhotoFound = false;
       for (let i = 0; i < intersects.length; i++) {
         const intersectedObject = intersects[i].object;
-        const hoveredPhoto = photos.find(photo => 
+        const clickedPhoto = photos.find(photo => 
           photo.hitboxMesh === intersectedObject || photo.mesh === intersectedObject
         );
-        if (hoveredPhoto) {
-          setHoveredPhoto(hoveredPhoto);
-          hoveredPhotoFound = true;
-          document.body.style.cursor = 'pointer';
+        
+        if (clickedPhoto) {
+          handlePhotoClick(clickedPhoto);
           break;
         }
-      }
-
-      if (!hoveredPhotoFound) {
-        setHoveredPhoto(null);
-        document.body.style.cursor = 'default';
       }
     };
 
     const onMouseClick = (event: MouseEvent) => {
-      if (hoveredPhoto) {
-        handlePhotoClick(event);
-      }
+      mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+      mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+      handleInteraction();
     };
 
-    window.addEventListener('mousemove', onMouseMove);
-    window.addEventListener('click', onMouseClick);
+    if (isMobile) {
+      window.addEventListener('touchstart', onTouchStart);
+    } else {
+      window.addEventListener('click', onMouseClick);
+    }
 
     return () => {
       window.removeEventListener('resize', handleResize);
-      window.removeEventListener('mousemove', onMouseMove);
-      window.removeEventListener('click', onMouseClick);
+      if (isMobile) {
+        window.removeEventListener('touchstart', onTouchStart);
+      } else {
+        window.removeEventListener('click', onMouseClick);
+      }
       mountRef.current?.removeChild(renderer.domElement);
     };
   }, [isMobile, photos]);
@@ -306,52 +311,32 @@ export default function Home() {
     }
   };
 
-  const handlePhotoClick = (event: MouseEvent) => {
+  const handlePhotoClick = (clickedPhoto: Photo) => {
     if (cameraRef.current && controlsRef.current && sceneRef.current) {
-      const mouse = new THREE.Vector2(
-        (event.clientX / window.innerWidth) * 2 - 1,
-        -(event.clientY / window.innerHeight) * 2 + 1
-      );
+      const targetPosition = clickedPhoto.position.clone().add(new THREE.Vector3(0, 0, 2));
+      const duration = 1000; // 1 second
+      const startPosition = cameraRef.current.position.clone();
+      const startTime = Date.now();
 
-      const raycaster = new THREE.Raycaster();
-      raycaster.setFromCamera(mouse, cameraRef.current);
+      const zoomAnimation = () => {
+        const now = Date.now();
+        const progress = Math.min((now - startTime) / duration, 1);
+        const easeProgress = 1 - Math.pow(1 - progress, 3); // Cubic ease-out
 
-      const intersects = raycaster.intersectObjects(sceneRef.current.children, true);
-      
-      for (let i = 0; i < intersects.length; i++) {
-        const intersectedObject = intersects[i].object;
-        const clickedPhoto = photos.find(photo => 
-          photo.hitboxMesh === intersectedObject || photo.mesh === intersectedObject
-        );
-        
-        if (clickedPhoto) {
-          const targetPosition = clickedPhoto.position.clone().add(new THREE.Vector3(0, 0, 2));
-          const duration = 1000; // 1 second
-          const startPosition = cameraRef.current.position.clone();
-          const startTime = Date.now();
+        cameraRef.current!.position.lerpVectors(startPosition, targetPosition, easeProgress);
+        controlsRef.current!.target.copy(clickedPhoto.position);
+        controlsRef.current!.update();
 
-          const zoomAnimation = () => {
-            const now = Date.now();
-            const progress = Math.min((now - startTime) / duration, 1);
-            const easeProgress = 1 - Math.pow(1 - progress, 3); // Cubic ease-out
-
-            cameraRef.current!.position.lerpVectors(startPosition, targetPosition, easeProgress);
-            controlsRef.current!.target.copy(clickedPhoto.position);
-            controlsRef.current!.update();
-
-            if (progress < 1) {
-              requestAnimationFrame(zoomAnimation);
-            } else {
-              setSelectedPhoto(clickedPhoto);
-            }
-
-            rendererRef.current!.render(sceneRef.current!, cameraRef.current!);
-          };
-
-          zoomAnimation();
-          break;
+        if (progress < 1) {
+          requestAnimationFrame(zoomAnimation);
+        } else {
+          setSelectedPhoto(clickedPhoto);
         }
-      }
+
+        rendererRef.current!.render(sceneRef.current!, cameraRef.current!);
+      };
+
+      zoomAnimation();
     }
   };
 
