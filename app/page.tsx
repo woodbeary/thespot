@@ -8,6 +8,9 @@ import Image from 'next/image';
 import { Button } from "@/components/ui/button"
 import PostEntry from '@/components/PostEntry'
 import Link from 'next/link';
+import TicketPurchase from '@/components/TicketPurchase';
+import KegStatus from '@/components/KegStatus';
+import { createRoot } from 'react-dom/client';
 
 // Update the Photo interface
 interface Photo {
@@ -50,6 +53,10 @@ export default function Home() {
 
   // Add this new state for weather data
   const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
+
+  const [showTicketPurchase, setShowTicketPurchase] = useState(false);
+  const [kegLevel, setKegLevel] = useState(75);
+  const [lastPourTime, setLastPourTime] = useState('2023-05-01 14:30');
 
   useEffect(() => {
     if (!mountRef.current) return;
@@ -289,6 +296,19 @@ export default function Home() {
       window.addEventListener('mousemove', onMouseMove);
     }
 
+    // Add KegStatus to the scene
+    if (sceneRef.current && cameraRef.current) {
+      const kegStatusElement = <KegStatus 
+        level={kegLevel} 
+        lastPourTime={lastPourTime} 
+        scene={sceneRef.current} 
+        camera={cameraRef.current} 
+      />;
+      const container = document.createElement('div');
+      const root = createRoot(container);
+      root.render(kegStatusElement);
+    }
+
     return () => {
       window.removeEventListener('resize', handleResize);
       if (isMobile) {
@@ -299,7 +319,7 @@ export default function Home() {
       }
       mountRef.current?.removeChild(renderer.domElement);
     };
-  }, [isMobile, photos]);
+  }, [isMobile, photos, kegLevel, lastPourTime]);
 
   // Add this new useEffect for fetching weather data
   useEffect(() => {
@@ -510,6 +530,17 @@ export default function Home() {
             </Button>
           </div>
         )}
+
+        <Button
+          className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-blue-500 hover:bg-blue-600 text-white z-50 pointer-events-auto"
+          onClick={() => setShowTicketPurchase(true)}
+        >
+          Get Tickets
+        </Button>
+
+        {showTicketPurchase && (
+          <TicketPurchase onClose={() => setShowTicketPurchase(false)} />
+        )}
       </div>
       {showCoordinates && (
         <div className="absolute inset-0 z-20 bg-black bg-opacity-50 flex flex-col items-center justify-center pointer-events-auto">
@@ -553,7 +584,7 @@ export default function Home() {
               <p>{selectedPhoto.caption}</p>
             </div>
             <Button
-              className="absolute top-4 right-4 bg-black bg-opacity-50 text-white border border-white rounded-full p-2 hover:bg-white hover:text-black transition-colors"
+              className="absolute top-4 right-4 bg-black bg-opacity-50 text-white border border-white rounded-full p-2 hover:bg-white hover-text-black transition-colors"
               onClick={handleClosePhoto}
             >
               Close
