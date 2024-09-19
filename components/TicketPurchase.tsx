@@ -9,7 +9,7 @@ import toast, { Toaster } from 'react-hot-toast';
 import Confetti from 'react-confetti';
 import { ClipLoader } from 'react-spinners';
 
-const FREE_NAMES = ['jack', 'darren', 'andrew', 'frank'];
+const FREE_NAMES = ['jack', 'daniel', 'andrew', 'darren', 'frank'];
 
 export default function TicketPurchase({ onClose }: { onClose: () => void }) {
   const [name, setName] = useState('');
@@ -48,10 +48,11 @@ export default function TicketPurchase({ onClose }: { onClose: () => void }) {
           toast.success('Ticket confirmed! 🎉');
         } else {
           setIsLoading(false);
-          setError("For the free option, your name must be Jack, Darren, Andrew, or Frank. Try the $2 option instead.");
+          setError("For the free option, your name must include Jack, Daniel, Andrew, Darren, or Frank. Try the $2 option instead.");
         }
       } else {
-        window.location.href = 'https://buy.stripe.com/your_stripe_link_here';
+        // Redirect to Stripe for the $2 option
+        window.location.href = 'https://stripe.com';
       }
     }
   };
