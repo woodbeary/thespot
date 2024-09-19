@@ -3,17 +3,28 @@
 import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
+import PostEntry from './components/PostEntry';
+import { Button } from "@/components/ui/button"
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function Home() {
   const mountRef = useRef<HTMLDivElement>(null);
+  const sceneRef = useRef<THREE.Scene | null>(null);
+  const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
+  const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
+  const controlsRef = useRef<OrbitControls | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [showPostEntry, setShowPostEntry] = useState(false);
 
   useEffect(() => {
     if (!mountRef.current) return;
 
     const scene = new THREE.Scene();
+    sceneRef.current = scene;
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    cameraRef.current = camera;
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    rendererRef.current = renderer;
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     mountRef.current.appendChild(renderer.domElement);
@@ -62,14 +73,15 @@ export default function Home() {
     sphere.position.set(8, 3, 8);
     scene.add(sphere);
 
-    camera.position.set(0, 15, 20);
+    camera.position.set(0, 10, 15); // Adjusted for a more zoomed-in view
 
     const controls = new OrbitControls(camera, renderer.domElement);
+    controlsRef.current = controls;
     controls.enableDamping = true;
     controls.dampingFactor = 0.05;
     controls.enableZoom = true;
-    controls.minDistance = 10;
-    controls.maxDistance = 30;
+    controls.minDistance = 5; // Adjusted for a more zoomed-in view
+    controls.maxDistance = 20;
     controls.autoRotate = true;
     controls.autoRotateSpeed = 0.5;
 
@@ -118,9 +130,11 @@ export default function Home() {
     animate();
 
     const handleResize = () => {
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
+      if (camera && renderer) {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      }
     };
 
     window.addEventListener('resize', handleResize);
@@ -134,6 +148,42 @@ export default function Home() {
     };
   }, []);
 
+  const handleEnter = () => {
+    if (cameraRef.current && controlsRef.current) {
+      const targetPosition = new THREE.Vector3(8, 3, 8);
+      const duration = 2000; // 2 seconds
+      const startPosition = cameraRef.current.position.clone();
+      const startTime = Date.now();
+
+      const zoomAnimation = () => {
+        const now = Date.now();
+        const progress = Math.min((now - startTime) / duration, 1);
+        const easeProgress = 1 - Math.pow(1 - progress, 3); // Cubic ease-out
+
+        cameraRef.current!.position.lerpVectors(startPosition, targetPosition, easeProgress);
+        controlsRef.current!.update();
+
+        if (progress < 1) {
+          requestAnimationFrame(zoomAnimation);
+        } else {
+          setShowPostEntry(true);
+        }
+
+        rendererRef.current!.render(sceneRef.current!, cameraRef.current!);
+      };
+
+      zoomAnimation();
+    }
+  };
+
+  const handleBack = () => {
+    setShowPostEntry(false);
+    if (cameraRef.current && controlsRef.current) {
+      cameraRef.current.position.set(0, 10, 15);
+      controlsRef.current.update();
+    }
+  };
+
   return (
     <main className="relative flex min-h-screen flex-col items-center justify-center bg-black text-white overflow-hidden">
       <div ref={mountRef} className="absolute inset-0" />
@@ -142,9 +192,17 @@ export default function Home() {
       </div>
       <h1 className="absolute top-4 left-4 text-2xl md:text-4xl font-bold tracking-wider z-10">thespot.lol</h1>
       <p className="absolute bottom-4 right-4 text-sm md:text-xl tracking-wide z-10">Riverside, CA</p>
-      <button className="absolute bottom-4 left-4 px-4 py-2 bg-white text-black rounded hover:bg-gray-200 transition-colors z-10">
-        Enter
-      </button>
+      {!showPostEntry && (
+        <Button 
+          className="absolute bottom-4 left-4 px-4 py-2 bg-white text-black rounded hover:bg-gray-200 transition-colors z-10"
+          onClick={handleEnter}
+        >
+          Enter
+        </Button>
+      )}
+      {showPostEntry && (
+        <PostEntry onBack={handleBack} />
+      )}
     </main>
   );
 }
