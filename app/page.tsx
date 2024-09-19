@@ -221,23 +221,21 @@ export default function Home() {
       </div>
       <div className="relative z-10 flex flex-col justify-between h-full p-4">
         {!showPostEntry && (
-          <div className="w-full">
-            <h1 className="text-2xl md:text-4xl font-bold tracking-wider">thespot.lol</h1>
-          </div>
-        )}
-        <div className="flex justify-between items-end w-full">
-          <div>
-            {!showPostEntry && (
+          <>
+            <div className="w-full">
+              <h1 className="text-2xl md:text-4xl font-bold tracking-wider">thespot.lol</h1>
+            </div>
+            <div className="flex justify-between items-end w-full mb-4">
+              <p className="text-sm md:text-xl tracking-wide">Riverside, CA</p>
               <Button 
                 className="px-4 py-2 bg-white text-black rounded hover:bg-gray-200 transition-colors"
                 onClick={handleEnter}
               >
                 Enter
               </Button>
-            )}
-          </div>
-          <p className="text-sm md:text-xl tracking-wide">Riverside, CA</p>
-        </div>
+            </div>
+          </>
+        )}
       </div>
       {showPostEntry && (
         <div className="absolute inset-0 z-20">
