@@ -510,96 +510,101 @@ export default function Home() {
     }
   };
 
+  const handleTicketPurchaseClose = () => {
+    setShowTicketPurchase(false);
+  };
+
   return (
-    <main className="relative bg-black text-white overflow-hidden h-screen">
-      <div ref={mountRef} className="absolute inset-0" />
-      <div className="relative z-10 flex flex-col justify-between h-full p-4 pointer-events-none">
-        {!showCoordinates && (
-          <div className="w-full pointer-events-auto">
-            <h1 className="text-2xl md:text-4xl font-bold tracking-wider">thespot.lol</h1>
-          </div>
-        )}
-        {!showCoordinates && (
-          <div className="absolute bottom-[15%] left-0 right-0 flex justify-between items-end w-full px-4">
-            <p className="text-sm md:text-xl tracking-wide pointer-events-auto">Riverside, CA</p>
-            <Button 
-              className="px-4 py-2 bg-white text-black rounded hover:bg-gray-200 transition-colors pointer-events-auto"
-              onClick={handleEnter}
-            >
-              Enter
-            </Button>
-          </div>
-        )}
-
-        <Button
-          className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-blue-500 hover:bg-blue-600 text-white z-50 pointer-events-auto"
-          onClick={() => setShowTicketPurchase(true)}
-        >
-          Get Tickets
-        </Button>
-
-        {showTicketPurchase && (
-          <TicketPurchase onClose={() => setShowTicketPurchase(false)} />
-        )}
-      </div>
-      {showCoordinates && (
-        <div className="absolute inset-0 z-20 bg-black bg-opacity-50 flex flex-col items-center justify-center pointer-events-auto">
-          <Button
-            className="absolute top-4 left-4 text-white"
-            onClick={handleBack}
-          >
-            ← Back
-          </Button>
-          <div className="text-center">
-            <Link 
-              href={`https://www.google.com/maps/search/?api=1&query=${coordinates.lat},${coordinates.lng}`} 
-              target="_blank" 
-              rel="noopener noreferrer"
-              onClick={handleCoordinateClick}
-            >
-              <p className="text-2xl md:text-3xl font-bold mb-2">{`${coordinates.lat.toFixed(5)}, ${coordinates.lng.toFixed(5)}`}</p>
-              <p className="text-lg md:text-xl">End of Victoria Ave</p>
-            </Link>
-          </div>
-        </div>
-      )}
-      {showPostEntry && (
-        <div className="absolute inset-0 z-30">
-          <PostEntry onBack={handleBack} />
-        </div>
-      )}
-      {selectedPhoto && (
-        <div className="absolute inset-0 z-30 flex items-center justify-center bg-black bg-opacity-75">
-          <div className="relative polaroid-frame">
-            <Image
-              src={selectedPhoto.src}
-              alt={`Photo ${selectedPhoto.id}`}
-              width={800}
-              height={600}
-              className={`max-w-full max-h-[60vh] object-cover natural-image ${
-                selectedPhoto.id === 'IMG_5295' ? 'object-top' : 'object-center'
-              }`}
-            />
-            <div className="polaroid-caption">
-              <p>{selectedPhoto.caption}</p>
+    <>
+      <main className="relative bg-black text-white overflow-hidden h-screen">
+        <div ref={mountRef} className="absolute inset-0" />
+        <div className="relative z-10 flex flex-col justify-between h-full p-4 pointer-events-none">
+          {!showCoordinates && (
+            <div className="w-full pointer-events-auto">
+              <h1 className="text-2xl md:text-4xl font-bold tracking-wider">thespot.lol</h1>
             </div>
+          )}
+          {!showCoordinates && (
+            <div className="absolute bottom-[15%] left-0 right-0 flex justify-between items-end w-full px-4">
+              <p className="text-sm md:text-xl tracking-wide pointer-events-auto">Riverside, CA</p>
+              <Button 
+                className="px-4 py-2 bg-white text-black rounded hover:bg-gray-200 transition-colors pointer-events-auto"
+                onClick={handleEnter}
+              >
+                Enter
+              </Button>
+            </div>
+          )}
+
+          <Button
+            className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-blue-500 hover:bg-blue-600 text-white z-50 pointer-events-auto"
+            onClick={() => setShowTicketPurchase(true)}
+          >
+            Get Tickets
+          </Button>
+        </div>
+        {showCoordinates && (
+          <div className="absolute inset-0 z-20 bg-black bg-opacity-50 flex flex-col items-center justify-center pointer-events-auto">
             <Button
-              className="absolute top-4 right-4 bg-black bg-opacity-50 text-white border border-white rounded-full p-2 hover:bg-white hover-text-black transition-colors"
-              onClick={handleClosePhoto}
+              className="absolute top-4 left-4 text-white"
+              onClick={handleBack}
             >
-              Close
+              ← Back
             </Button>
+            <div className="text-center">
+              <Link 
+                href={`https://www.google.com/maps/search/?api=1&query=${coordinates.lat},${coordinates.lng}`} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                onClick={handleCoordinateClick}
+              >
+                <p className="text-2xl md:text-3xl font-bold mb-2">{`${coordinates.lat.toFixed(5)}, ${coordinates.lng.toFixed(5)}`}</p>
+                <p className="text-lg md:text-xl">End of Victoria Ave</p>
+              </Link>
+            </div>
           </div>
-        </div>
+        )}
+        {showPostEntry && (
+          <div className="absolute inset-0 z-30">
+            <PostEntry onBack={handleBack} />
+          </div>
+        )}
+        {selectedPhoto && (
+          <div className="absolute inset-0 z-30 flex items-center justify-center bg-black bg-opacity-75">
+            <div className="relative polaroid-frame">
+              <Image
+                src={selectedPhoto.src}
+                alt={`Photo ${selectedPhoto.id}`}
+                width={800}
+                height={600}
+                className={`max-w-full max-h-[60vh] object-cover natural-image ${
+                  selectedPhoto.id === 'IMG_5295' ? 'object-top' : 'object-center'
+                }`}
+              />
+              <div className="polaroid-caption">
+                <p>{selectedPhoto.caption}</p>
+              </div>
+              <Button
+                className="absolute top-4 right-4 bg-black bg-opacity-50 text-white border border-white rounded-full p-2 hover:bg-white hover-text-black transition-colors"
+                onClick={handleClosePhoto}
+              >
+                Close
+              </Button>
+            </div>
+          </div>
+        )}
+        
+        {/* Add this new div for weather display */}
+        {weatherData && (
+          <div className="absolute top-4 right-4 text-white z-20">
+            <p className="text-lg font-bold">{`${weatherData.temperature}°F`}</p>
+            <p className="text-sm">{weatherData.description}</p>
+          </div>
+        )}
+      </main>
+      {showTicketPurchase && (
+        <TicketPurchase onClose={handleTicketPurchaseClose} />
       )}
-      
-      {/* Add this new div for weather display */}
-      {weatherData && (
-        <div className="absolute top-4 right-4 text-white z-20">
-          <p className="text-lg font-bold">{`${weatherData.temperature}°F`}</p>
-          <p className="text-sm">{weatherData.description}</p>
-        </div>
-      )}
-    </main>
+    </>
   );
 }
