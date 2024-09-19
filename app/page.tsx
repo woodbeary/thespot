@@ -186,7 +186,7 @@ export default function Home() {
     const iconGeometry = new THREE.SphereGeometry(0.2, 32, 32);
     const iconMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
     const clickedMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-    const highlightMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00 }); // Yellow highlight
+    const highlightMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00 });
     const hitboxSize = isMobile ? 1 : 0.5;
     const hitboxGeometry = new THREE.SphereGeometry(hitboxSize, 32, 32);
     const hitboxMaterial = new THREE.MeshBasicMaterial({ 
@@ -196,7 +196,7 @@ export default function Home() {
     });
 
     photos.forEach(photo => {
-      const photoMesh = new THREE.Mesh(iconGeometry, iconMaterial);
+      const photoMesh = new THREE.Mesh(iconGeometry, photo.clicked ? clickedMaterial : iconMaterial);
       photoMesh.position.copy(photo.position);
       scene.add(photoMesh);
 
@@ -204,7 +204,6 @@ export default function Home() {
       hitboxMesh.position.copy(photo.position);
       scene.add(hitboxMesh);
 
-      // Add both meshes to the photo object for later reference
       (photo as Photo & { mesh: THREE.Mesh, hitboxMesh: THREE.Mesh }).mesh = photoMesh;
       (photo as Photo & { mesh: THREE.Mesh, hitboxMesh: THREE.Mesh }).hitboxMesh = hitboxMesh;
     });
@@ -257,7 +256,7 @@ export default function Home() {
       let hoveredPhotoFound = false;
       photos.forEach(photo => {
         if (photo.mesh) {
-          photo.mesh.material = photo.clicked ? clickedMaterial : iconMaterial; // Consider clicked state
+          photo.mesh.material = photo.clicked ? clickedMaterial : iconMaterial;
         }
       });
 
@@ -267,7 +266,7 @@ export default function Home() {
           photo.hitboxMesh === intersectedObject || photo.mesh === intersectedObject
         );
         if (hoveredPhoto && hoveredPhoto.mesh) {
-          hoveredPhoto.mesh.material = highlightMaterial; // Apply highlight material
+          hoveredPhoto.mesh.material = highlightMaterial;
           setHoveredPhoto(hoveredPhoto);
           hoveredPhotoFound = true;
           document.body.style.cursor = 'pointer';
@@ -411,9 +410,15 @@ export default function Home() {
           clickedPhotos[clickedPhoto.id] = true;
           localStorage.setItem('clickedPhotos', JSON.stringify(clickedPhotos));
 
-          setPhotos(prevPhotos => prevPhotos.map(photo => 
-            photo.id === clickedPhoto.id ? { ...photo, clicked: true } : photo
-          ));
+          setPhotos(prevPhotos => prevPhotos.map(photo => {
+            if (photo.id === clickedPhoto.id) {
+              if (photo.mesh) {
+                (photo.mesh.material as THREE.MeshBasicMaterial).color.setHex(0x00ff00);
+              }
+              return { ...photo, clicked: true };
+            }
+            return photo;
+          }));
 
           setSelectedPhoto(clickedPhoto);
         }
