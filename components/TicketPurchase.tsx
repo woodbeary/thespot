@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,6 +20,16 @@ export default function TicketPurchase({ onClose }: { onClose: () => void }) {
   const [isLoading, setIsLoading] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
   const [showCheckmark, setShowCheckmark] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,10 +39,10 @@ export default function TicketPurchase({ onClose }: { onClose: () => void }) {
       if (ticketOption === 'free') {
         const lowercaseName = name.toLowerCase();
         if (FREE_NAMES.some(freeName => lowercaseName.includes(freeName))) {
-          await new Promise(resolve => setTimeout(resolve, 1000)); // Reduced delay to 1 second
+          await new Promise(resolve => setTimeout(resolve, 1000));
           setIsLoading(false);
           setShowCheckmark(true);
-          await new Promise(resolve => setTimeout(resolve, 500)); // Show checkmark for 0.5 seconds
+          await new Promise(resolve => setTimeout(resolve, 500));
           setIsSubmitted(true);
           setShowConfetti(true);
           toast.success('Ticket confirmed! 🎉');
@@ -41,7 +51,6 @@ export default function TicketPurchase({ onClose }: { onClose: () => void }) {
           setError("For the free option, your name must be Jack, Darren, Andrew, or Frank. Try the $2 option instead.");
         }
       } else {
-        // Redirect to Stripe landing page for $2 option
         window.location.href = 'https://buy.stripe.com/your_stripe_link_here';
       }
     }
@@ -53,14 +62,22 @@ export default function TicketPurchase({ onClose }: { onClose: () => void }) {
     </svg>
   );
 
+  const modalClass = isMobile
+    ? "fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-[9999] p-4"
+    : "fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-[9999]";
+
+  const contentClass = isMobile
+    ? "bg-black border border-white p-4 rounded-lg w-full max-w-sm text-white"
+    : "bg-black border border-white p-6 rounded-lg max-w-md w-full text-white";
+
   if (isSubmitted) {
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-[9999]" onClick={onClose}>
-        <div className="bg-black border border-white p-6 rounded-lg max-w-md w-full text-white" onClick={(e) => e.stopPropagation()}>
-          <h2 className="text-2xl font-bold mb-4">Ticket Confirmed</h2>
+      <div className={modalClass} onClick={onClose}>
+        <div className={contentClass} onClick={(e) => e.stopPropagation()}>
+          <h2 className="text-xl md:text-2xl font-bold mb-4">Ticket Confirmed</h2>
           <p className="mb-4">Alright, {name}.. present this at the gate:</p>
           <div className="flex justify-center mb-4">
-            <QRCodeSVG value={`${name}-${ticketOption}`} size={200} />
+            <QRCodeSVG value={`${name}-${ticketOption}`} size={isMobile ? 150 : 200} />
           </div>
           <Button onClick={onClose} className="w-full bg-blue-500 hover:bg-blue-600">Close</Button>
         </div>
@@ -70,48 +87,48 @@ export default function TicketPurchase({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-[9999]" onClick={onClose}>
-      <div className="bg-black border border-white p-6 rounded-lg max-w-md w-full text-white" onClick={(e) => e.stopPropagation()}>
-        <h2 className="text-2xl font-bold mb-4">Get Your Ticket</h2>
+    <div className={modalClass} onClick={onClose}>
+      <div className={contentClass} onClick={(e) => e.stopPropagation()}>
+        <h2 className="text-xl md:text-2xl font-bold mb-4">Get Your Ticket</h2>
         {isLoading ? (
           <div className="flex flex-col items-center justify-center h-40">
-            <ClipLoader color="#ffffff" size={50} />
-            <p className="mt-4">Processing your ticket...</p>
+            <ClipLoader color="#ffffff" size={40} />
+            <p className="mt-4 text-sm md:text-base">Processing your ticket...</p>
           </div>
         ) : showCheckmark ? (
           <div className="flex flex-col items-center justify-center h-40">
             <GreenCheckmark />
-            <p className="mt-4">Ticket confirmed!</p>
+            <p className="mt-4 text-sm md:text-base">Ticket confirmed!</p>
           </div>
         ) : (
-          <form onSubmit={handleSubmit}>
-            <div className="mb-4">
-              <Label htmlFor="name" className="text-white">Name</Label>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <Label htmlFor="name" className="text-white text-sm md:text-base">Name</Label>
               <Input
                 id="name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
-                className="bg-gray-800 text-white border-gray-700"
+                className="bg-gray-800 text-white border-gray-700 mt-1"
               />
             </div>
-            <div className="mb-4">
-              <Label className="text-white">Ticket Option</Label>
-              <RadioGroup value={ticketOption} onValueChange={setTicketOption}>
+            <div>
+              <Label className="text-white text-sm md:text-base">Ticket Option</Label>
+              <RadioGroup value={ticketOption} onValueChange={setTicketOption} className="mt-1">
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="free" id="free" />
-                  <Label htmlFor="free" className="text-white">Free</Label>
+                  <Label htmlFor="free" className="text-white text-sm md:text-base">Free</Label>
                 </div>
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="paid" id="paid" />
-                  <Label htmlFor="paid" className="text-white">$2</Label>
+                  <Label htmlFor="paid" className="text-white text-sm md:text-base">$2</Label>
                 </div>
               </RadioGroup>
             </div>
             
-            {error && <p className="text-red-500 mb-4">{error}</p>}
+            {error && <p className="text-red-500 text-sm md:text-base">{error}</p>}
 
-            <div className="mb-4 text-sm">
+            <div className="text-sm">
               <div className="flex items-center space-x-2">
                 <Checkbox 
                   id="terms" 
@@ -119,7 +136,7 @@ export default function TicketPurchase({ onClose }: { onClose: () => void }) {
                   onCheckedChange={(checked) => setAgreeTerms(checked as boolean)}
                   required
                 />
-                <Label htmlFor="terms" className="text-white">
+                <Label htmlFor="terms" className="text-white text-xs md:text-sm">
                   I have read and accept the terms and conditions
                 </Label>
               </div>
@@ -129,11 +146,11 @@ export default function TicketPurchase({ onClose }: { onClose: () => void }) {
               </p>
             </div>
 
-            <div className="flex justify-between">
-              <Button type="submit" className="bg-blue-500 hover:bg-blue-600" disabled={!agreeTerms || isLoading}>
+            <div className="flex flex-col md:flex-row justify-between space-y-2 md:space-y-0 md:space-x-2">
+              <Button type="submit" className="bg-blue-500 hover:bg-blue-600 w-full md:w-auto" disabled={!agreeTerms || isLoading}>
                 Submit
               </Button>
-              <Button type="button" variant="outline" onClick={onClose} className="text-white border-white hover:bg-gray-800">Cancel</Button>
+              <Button type="button" variant="outline" onClick={onClose} className="text-white border-white hover:bg-gray-800 w-full md:w-auto">Cancel</Button>
             </div>
           </form>
         )}
