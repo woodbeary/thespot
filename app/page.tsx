@@ -17,6 +17,7 @@ interface Photo {
   caption: string;
   mesh?: THREE.Mesh;
   hitboxMesh?: THREE.Mesh;
+  clicked: boolean;
 }
 
 // Add this interface for weather data
@@ -36,10 +37,10 @@ export default function Home() {
 
   // Add new state for photos and selected photo
   const [photos, setPhotos] = useState<Photo[]>([
-    { id: 'IMG_5268', src: '/IMG_5268.jpeg', position: new THREE.Vector3(-6, 3, -3), caption: "Goth vibes: Iron pickaxe meets dirt block" },
-    { id: 'IMG_5286', src: '/IMG_5286.jpeg', position: new THREE.Vector3(2, 3.5, -5), caption: "Base camp setup: Creeper lurking nearby" },
-    { id: 'IMG_5293', src: '/IMG_5293.jpeg', position: new THREE.Vector3(5, 4, 4), caption: "Post-build chill: Beer and laptop on a crafting table" },
-    { id: 'IMG_5295', src: '/IMG_5295.jpeg', position: new THREE.Vector3(-3, 3.2, 6), caption: "Hilltop base: Panoramic view of the biome" },
+    { id: 'IMG_5268', src: '/IMG_5268.jpeg', position: new THREE.Vector3(-6, 3, -3), caption: "Goth vibes: Iron pickaxe meets dirt block", clicked: false },
+    { id: 'IMG_5286', src: '/IMG_5286.jpeg', position: new THREE.Vector3(2, 3.5, -5), caption: "Base camp setup: Creeper lurking nearby", clicked: false },
+    { id: 'IMG_5293', src: '/IMG_5293.jpeg', position: new THREE.Vector3(5, 4, 4), caption: "Post-build chill: Beer and laptop on a crafting table", clicked: false },
+    { id: 'IMG_5295', src: '/IMG_5295.jpeg', position: new THREE.Vector3(-3, 3.2, 6), caption: "Hilltop base: Panoramic view of the biome", clicked: false },
   ]);
   const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
   const [hoveredPhoto, setHoveredPhoto] = useState<Photo | null>(null);
@@ -184,6 +185,7 @@ export default function Home() {
     // Create photo icons with larger hitbox and highlight
     const iconGeometry = new THREE.SphereGeometry(0.2, 32, 32);
     const iconMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
+    const clickedMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
     const highlightMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00 }); // Yellow highlight
     const hitboxSize = isMobile ? 1 : 0.5;
     const hitboxGeometry = new THREE.SphereGeometry(hitboxSize, 32, 32);
@@ -255,7 +257,7 @@ export default function Home() {
       let hoveredPhotoFound = false;
       photos.forEach(photo => {
         if (photo.mesh) {
-          photo.mesh.material = iconMaterial; // Reset to default material
+          photo.mesh.material = photo.clicked ? clickedMaterial : iconMaterial; // Consider clicked state
         }
       });
 
@@ -404,6 +406,15 @@ export default function Home() {
         if (progress < 1) {
           requestAnimationFrame(zoomAnimation);
         } else {
+          // Update clicked state in localStorage and state
+          const clickedPhotos = JSON.parse(localStorage.getItem('clickedPhotos') || '{}');
+          clickedPhotos[clickedPhoto.id] = true;
+          localStorage.setItem('clickedPhotos', JSON.stringify(clickedPhotos));
+
+          setPhotos(prevPhotos => prevPhotos.map(photo => 
+            photo.id === clickedPhoto.id ? { ...photo, clicked: true } : photo
+          ));
+
           setSelectedPhoto(clickedPhoto);
         }
 
@@ -413,6 +424,15 @@ export default function Home() {
       zoomAnimation();
     }
   };
+
+  // Add this useEffect to load clicked states from localStorage on component mount
+  useEffect(() => {
+    const clickedPhotos = JSON.parse(localStorage.getItem('clickedPhotos') || '{}');
+    setPhotos(prevPhotos => prevPhotos.map(photo => ({
+      ...photo,
+      clicked: !!clickedPhotos[photo.id]
+    })));
+  }, []);
 
   const handleClosePhoto = () => {
     setSelectedPhoto(null);
