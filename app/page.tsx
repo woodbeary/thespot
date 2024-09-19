@@ -369,42 +369,40 @@ export default function Home() {
       </div>
       <div className="relative z-10 flex flex-col justify-between h-full p-4 pointer-events-none">
         {!showCoordinates && (
-          <>
-            <div className="w-full pointer-events-auto">
-              <h1 className="text-2xl md:text-4xl font-bold tracking-wider">thespot.lol</h1>
-            </div>
-            <div className="absolute bottom-[15%] left-0 right-0 flex justify-between items-end w-full px-4">
-              <p className="text-sm md:text-xl tracking-wide pointer-events-auto">Riverside, CA</p>
-              <Button 
-                className="px-4 py-2 bg-white text-black rounded hover:bg-gray-200 transition-colors pointer-events-auto"
-                onClick={handleEnter}
-              >
-                Enter
-              </Button>
-            </div>
-          </>
+          <div className="w-full pointer-events-auto">
+            <h1 className="text-2xl md:text-4xl font-bold tracking-wider">thespot.lol</h1>
+          </div>
         )}
-        {showCoordinates && (
-          <>
-            <div className="w-full pointer-events-auto flex items-center">
-              <Button
-                className="text-white"
-                onClick={handleBack}
-              >
-                ← Back
-              </Button>
-            </div>
-            <div className="absolute bottom-[15%] left-0 right-0 flex flex-col items-center w-full px-4 pointer-events-auto">
-              <Link href={`https://www.google.com/maps/search/?api=1&query=${coordinates.lat},${coordinates.lng}`} target="_blank" rel="noopener noreferrer">
-                <p className="text-xl md:text-2xl font-bold mb-2">{`${coordinates.lat.toFixed(5)}, ${coordinates.lng.toFixed(5)}`}</p>
-              </Link>
-              <p className="text-lg md:text-xl">End of Victoria Ave</p>
-            </div>
-          </>
+        {!showCoordinates && (
+          <div className="absolute bottom-[15%] left-0 right-0 flex justify-between items-end w-full px-4">
+            <p className="text-sm md:text-xl tracking-wide pointer-events-auto">Riverside, CA</p>
+            <Button 
+              className="px-4 py-2 bg-white text-black rounded hover:bg-gray-200 transition-colors pointer-events-auto"
+              onClick={handleEnter}
+            >
+              Enter
+            </Button>
+          </div>
         )}
       </div>
+      {showCoordinates && (
+        <div className="absolute inset-0 z-20 bg-black bg-opacity-50 flex flex-col items-center justify-center pointer-events-auto">
+          <Button
+            className="absolute top-4 left-4 text-white"
+            onClick={handleBack}
+          >
+            ← Back
+          </Button>
+          <div className="text-center">
+            <Link href={`https://www.google.com/maps/search/?api=1&query=${coordinates.lat},${coordinates.lng}`} target="_blank" rel="noopener noreferrer">
+              <p className="text-2xl md:text-3xl font-bold mb-2">{`${coordinates.lat.toFixed(5)}, ${coordinates.lng.toFixed(5)}`}</p>
+            </Link>
+            <p className="text-lg md:text-xl">End of Victoria Ave</p>
+          </div>
+        </div>
+      )}
       {showPostEntry && (
-        <div className="absolute inset-0 z-20">
+        <div className="absolute inset-0 z-30">
           <PostEntry onBack={handleBack} />
         </div>
       )}
@@ -424,7 +422,7 @@ export default function Home() {
               <p>{selectedPhoto.caption}</p>
             </div>
             <Button
-              className="absolute top-4 right-4 bg-transparent text-[#4a90e2] border border-[#4a90e2] rounded-full p-2 hover:bg-[#4a90e2] hover:text-black transition-colors"
+              className="absolute top-4 right-4 bg-black bg-opacity-50 text-white border border-white rounded-full p-2 hover:bg-white hover:text-black transition-colors"
               onClick={handleClosePhoto}
             >
               Close
