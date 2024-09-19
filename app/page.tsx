@@ -195,25 +195,23 @@ export default function Home() {
   };
 
   return (
-    <main className="relative flex min-h-screen flex-col items-center justify-between bg-black text-white overflow-hidden p-4">
+    <main className="relative flex min-h-screen flex-col items-center justify-center bg-black text-white overflow-hidden">
       <div ref={mountRef} className="absolute inset-0" />
       <div className={`absolute inset-0 flex items-center justify-center transition-opacity duration-1000 ${isLoading ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
         <div className="text-4xl font-bold">Loading...</div>
       </div>
       {!showPostEntry && (
-        <h1 className="text-2xl md:text-4xl font-bold tracking-wider z-10 mb-4">thespot.lol</h1>
+        <h1 className="absolute top-4 left-4 text-2xl md:text-4xl font-bold tracking-wider z-10">thespot.lol</h1>
       )}
-      <div className="flex flex-col items-center justify-center z-10 space-y-4">
-        {!showPostEntry && (
-          <Button 
-            className="px-4 py-2 bg-white text-black rounded hover:bg-gray-200 transition-colors"
-            onClick={handleEnter}
-          >
-            Enter
-          </Button>
-        )}
-        <p className="text-sm md:text-xl tracking-wide">Riverside, CA</p>
-      </div>
+      <p className="absolute bottom-4 right-4 text-sm md:text-xl tracking-wide z-10">Riverside, CA</p>
+      {!showPostEntry && (
+        <Button 
+          className="absolute bottom-4 left-4 px-4 py-2 bg-white text-black rounded hover:bg-gray-200 transition-colors z-10"
+          onClick={handleEnter}
+        >
+          Enter
+        </Button>
+      )}
       {showPostEntry && (
         <PostEntry onBack={handleBack} />
       )}
