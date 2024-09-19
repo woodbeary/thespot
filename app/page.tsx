@@ -3,10 +3,20 @@
 import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
-import PostEntry from './components/PostEntry';
-import { Button } from "@/components/ui/button"
-import { motion, AnimatePresence } from 'framer-motion';
 import { useMediaQuery } from 'react-responsive';
+import Image from 'next/image';
+import { Button } from "@/components/ui/button"
+import PostEntry from '@/components/PostEntry'
+import Link from 'next/link';
+
+// Update the Photo interface
+interface Photo {
+  id: string;
+  src: string;
+  position: THREE.Vector3;
+  caption: string;
+  mesh?: THREE.Mesh;
+}
 
 export default function Home() {
   const mountRef = useRef<HTMLDivElement>(null);
@@ -17,6 +27,19 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(true);
   const [showPostEntry, setShowPostEntry] = useState(false);
   const isMobile = useMediaQuery({ maxWidth: 767 });
+
+  // Add new state for photos and selected photo
+  const [photos, setPhotos] = useState<Photo[]>([
+    { id: 'IMG_5268', src: '/IMG_5268.jpeg', position: new THREE.Vector3(-6, 3, -3), caption: "Goth vibes: Iron pickaxe meets dirt block" },
+    { id: 'IMG_5286', src: '/IMG_5286.jpeg', position: new THREE.Vector3(2, 3.5, -5), caption: "Base camp setup: Creeper lurking nearby" },
+    { id: 'IMG_5293', src: '/IMG_5293.jpeg', position: new THREE.Vector3(5, 4, 4), caption: "Post-build chill: Beer and laptop on a crafting table" },
+    { id: 'IMG_5295', src: '/IMG_5295.jpeg', position: new THREE.Vector3(-3, 3.2, 6), caption: "Hilltop base: Panoramic view of the biome" },
+  ]);
+  const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
+  const [hoveredPhoto, setHoveredPhoto] = useState<Photo | null>(null);
+
+  const [showCoordinates, setShowCoordinates] = useState(false);
+  const coordinates = { lat: 33.884132, lng: -117.472707 };
 
   useEffect(() => {
     if (!mountRef.current) return;
@@ -126,6 +149,17 @@ export default function Home() {
       const scale = 1 + Math.sin(Date.now() * 0.003) * 0.1;
       sphere.scale.set(scale, scale, scale);
 
+      // Update photo icon hover effect
+      photos.forEach(photo => {
+        if (photo.mesh) {
+          if (hoveredPhoto === photo) {
+            photo.mesh.scale.setScalar(1.2); // Increase size on hover
+          } else {
+            photo.mesh.scale.setScalar(1); // Reset size
+          }
+        }
+      });
+
       renderer.render(scene, camera);
     };
 
@@ -152,11 +186,68 @@ export default function Home() {
     // Simulate loading
     setTimeout(() => setIsLoading(false), 2000);
 
+    // Create photo icons
+    const iconGeometry = new THREE.SphereGeometry(0.2, 32, 32);
+    const iconMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
+
+    photos.forEach(photo => {
+      const photoMesh = new THREE.Mesh(iconGeometry, iconMaterial);
+      photoMesh.position.copy(photo.position);
+      scene.add(photoMesh);
+      console.log(`Added photo icon at position: ${photo.position.x}, ${photo.position.y}, ${photo.position.z}`);
+
+      // Add the mesh to the photo object for later reference
+      (photo as Photo & { mesh: THREE.Mesh }).mesh = photoMesh;
+    });
+
+    // Force a re-render of the scene
+    renderer.render(scene, camera);
+
+    // Add raycaster for photo hover and click detection
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+
+    const onMouseMove = (event: MouseEvent) => {
+      mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+      mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+      raycaster.setFromCamera(mouse, camera);
+      const intersects = raycaster.intersectObjects(scene.children, true);
+
+      let hoveredPhotoFound = false;
+      for (let i = 0; i < intersects.length; i++) {
+        const intersectedObject = intersects[i].object;
+        const hoveredPhoto = photos.find(photo => photo.mesh === intersectedObject);
+        if (hoveredPhoto) {
+          setHoveredPhoto(hoveredPhoto);
+          hoveredPhotoFound = true;
+          document.body.style.cursor = 'pointer';
+          break;
+        }
+      }
+
+      if (!hoveredPhotoFound) {
+        setHoveredPhoto(null);
+        document.body.style.cursor = 'default';
+      }
+    };
+
+    const onMouseClick = (event: MouseEvent) => {
+      if (hoveredPhoto) {
+        handlePhotoClick(hoveredPhoto);
+      }
+    };
+
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('click', onMouseClick);
+
     return () => {
       window.removeEventListener('resize', handleResize);
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('click', onMouseClick);
       mountRef.current?.removeChild(renderer.domElement);
     };
-  }, [isMobile]);
+  }, [isMobile, photos, hoveredPhoto]);
 
   const handleEnter = () => {
     if (cameraRef.current && controlsRef.current) {
@@ -176,7 +267,7 @@ export default function Home() {
         if (progress < 1) {
           requestAnimationFrame(zoomAnimation);
         } else {
-          setShowPostEntry(true);
+          setShowCoordinates(true);
         }
 
         rendererRef.current!.render(sceneRef.current!, cameraRef.current!);
@@ -187,7 +278,7 @@ export default function Home() {
   };
 
   const handleBack = () => {
-    setShowPostEntry(false);
+    setShowCoordinates(false);
     if (cameraRef.current && controlsRef.current) {
       const startPosition = cameraRef.current.position.clone();
       const targetPosition = new THREE.Vector3(0, 10, 15);
@@ -213,6 +304,63 @@ export default function Home() {
     }
   };
 
+  const handlePhotoClick = (photo: Photo) => {
+    if (cameraRef.current && controlsRef.current) {
+      const targetPosition = photo.position.clone().add(new THREE.Vector3(0, 0, 2));
+      const duration = 1000; // 1 second
+      const startPosition = cameraRef.current.position.clone();
+      const startTime = Date.now();
+
+      const zoomAnimation = () => {
+        const now = Date.now();
+        const progress = Math.min((now - startTime) / duration, 1);
+        const easeProgress = 1 - Math.pow(1 - progress, 3); // Cubic ease-out
+
+        cameraRef.current!.position.lerpVectors(startPosition, targetPosition, easeProgress);
+        controlsRef.current!.target.copy(photo.position);
+        controlsRef.current!.update();
+
+        if (progress < 1) {
+          requestAnimationFrame(zoomAnimation);
+        } else {
+          setSelectedPhoto(photo);
+        }
+
+        rendererRef.current!.render(sceneRef.current!, cameraRef.current!);
+      };
+
+      zoomAnimation();
+    }
+  };
+
+  const handleClosePhoto = () => {
+    setSelectedPhoto(null);
+    if (cameraRef.current && controlsRef.current) {
+      const targetPosition = new THREE.Vector3(0, 10, 15);
+      const duration = 1000; // 1 second
+      const startPosition = cameraRef.current.position.clone();
+      const startTime = Date.now();
+
+      const zoomOutAnimation = () => {
+        const now = Date.now();
+        const progress = Math.min((now - startTime) / duration, 1);
+        const easeProgress = 1 - Math.pow(1 - progress, 3); // Cubic ease-out
+
+        cameraRef.current!.position.lerpVectors(startPosition, targetPosition, easeProgress);
+        controlsRef.current!.target.set(0, 0, 0);
+        controlsRef.current!.update();
+
+        if (progress < 1) {
+          requestAnimationFrame(zoomOutAnimation);
+        }
+
+        rendererRef.current!.render(sceneRef.current!, cameraRef.current!);
+      };
+
+      zoomOutAnimation();
+    }
+  };
+
   return (
     <main className="relative bg-black text-white overflow-hidden h-screen">
       <div ref={mountRef} className="absolute inset-0" />
@@ -220,7 +368,7 @@ export default function Home() {
         <div className="text-4xl font-bold">Loading...</div>
       </div>
       <div className="relative z-10 flex flex-col justify-between h-full p-4 pointer-events-none">
-        {!showPostEntry && (
+        {!showCoordinates && (
           <>
             <div className="w-full pointer-events-auto">
               <h1 className="text-2xl md:text-4xl font-bold tracking-wider">thespot.lol</h1>
@@ -236,10 +384,52 @@ export default function Home() {
             </div>
           </>
         )}
+        {showCoordinates && (
+          <>
+            <div className="w-full pointer-events-auto flex items-center">
+              <Button
+                className="text-white"
+                onClick={handleBack}
+              >
+                ← Back
+              </Button>
+            </div>
+            <div className="absolute bottom-[15%] left-0 right-0 flex flex-col items-center w-full px-4 pointer-events-auto">
+              <Link href={`https://www.google.com/maps/search/?api=1&query=${coordinates.lat},${coordinates.lng}`} target="_blank" rel="noopener noreferrer">
+                <p className="text-xl md:text-2xl font-bold mb-2">{`${coordinates.lat.toFixed(5)}, ${coordinates.lng.toFixed(5)}`}</p>
+              </Link>
+              <p className="text-lg md:text-xl">End of Victoria Ave</p>
+            </div>
+          </>
+        )}
       </div>
       {showPostEntry && (
         <div className="absolute inset-0 z-20">
           <PostEntry onBack={handleBack} />
+        </div>
+      )}
+      {selectedPhoto && (
+        <div className="absolute inset-0 z-30 flex items-center justify-center bg-black bg-opacity-75">
+          <div className="relative polaroid-frame">
+            <Image
+              src={selectedPhoto.src}
+              alt={`Photo ${selectedPhoto.id}`}
+              width={800}
+              height={600}
+              className={`max-w-full max-h-[60vh] object-cover natural-image ${
+                selectedPhoto.id === 'IMG_5295' ? 'object-top' : 'object-center'
+              }`}
+            />
+            <div className="polaroid-caption">
+              <p>{selectedPhoto.caption}</p>
+            </div>
+            <Button
+              className="absolute top-4 right-4 bg-transparent text-[#4a90e2] border border-[#4a90e2] rounded-full p-2 hover:bg-[#4a90e2] hover:text-black transition-colors"
+              onClick={handleClosePhoto}
+            >
+              Close
+            </Button>
+          </div>
         </div>
       )}
     </main>

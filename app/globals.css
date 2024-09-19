@@ -17,3 +17,46 @@ body {
     )
     rgb(var(--background-start-rgb));
 }
+
+.natural-image {
+  filter: none;
+}
+
+.polaroid-frame {
+  background-color: #050a14;
+  border: 1px solid #1a2639;
+  box-shadow: 0 0 15px rgba(41, 121, 255, 0.1);
+  padding: 15px 15px 60px;
+  transform: rotate(-2deg);
+  transition: transform 0.3s ease;
+  aspect-ratio: 3 / 4;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.polaroid-frame img {
+  flex-grow: 1;
+  object-fit: cover;
+  width: 100%;
+  height: auto;
+}
+
+.polaroid-caption {
+  font-family: 'Courier New', monospace;
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #4a90e2;
+  text-align: center;
+  margin-top: 15px;
+  text-shadow: 0 0 3px #2c5282;
+  letter-spacing: 1px;
+}
+
+@font-face {
+  font-family: 'OperationFont';
+  src: url('/fonts/operation-font.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
