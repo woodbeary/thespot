@@ -11,11 +11,10 @@ const DisableSiteModal: React.FC = () => {
     <Dialog open={true}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle className="text-center">Site Temporarily Unavailable</DialogTitle>
+          <DialogTitle className="text-center">Site Permanently Unavailable</DialogTitle>
         </DialogHeader>
         <div className="flex flex-col space-y-4 p-4 text-center">
-          <p>We are currently working on some exciting updates!</p>
-          <p>Please check back soon for a brand new experience.</p>
+          <p className="font-bold text-red-600">Trespassers will be prosecuted, I am not joking.</p>
         </div>
       </DialogContent>
     </Dialog>
