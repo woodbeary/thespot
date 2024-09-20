@@ -11,6 +11,9 @@ import Link from 'next/link';
 import TicketPurchase from '@/components/TicketPurchase';
 import KegStatus from '@/components/KegStatus';
 import { createRoot } from 'react-dom/client';
+import { motion, AnimatePresence } from 'framer-motion';
+import { FaUsers } from 'react-icons/fa';
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 
 // Update the Photo interface
 interface Photo {
@@ -27,6 +30,21 @@ interface Photo {
 interface WeatherData {
   temperature: number;
   description: string;
+}
+
+interface ProfilePicture {
+  id: string;
+  src: string;
+  position: THREE.Vector3;
+}
+
+interface ProfileData {
+  id: string;
+  src: string;
+  name: string;
+  bio: string;
+  side: 'left' | 'bottom' | 'right';
+  objectPosition?: string;
 }
 
 export default function Home() {
@@ -57,6 +75,16 @@ export default function Home() {
   const [showTicketPurchase, setShowTicketPurchase] = useState(false);
   const [kegLevel, setKegLevel] = useState(75);
   const [lastPourTime, setLastPourTime] = useState('2023-05-01 14:30');
+
+  // Update the profileData state
+  const [profileData, setProfileData] = useState<ProfileData[]>([
+    { id: 'IMG_5309', src: '/profile/IMG_5309.jpeg', name: 'danny.', bio: 'passionate about music and working out.', side: 'left' },
+    { id: 'IMG_5311', src: '/profile/IMG_5311.jpeg', name: 'damian.', bio: 'tech with a love for neuroscience.', side: 'bottom' },
+    { id: 'IMG_5313', src: '/profile/IMG_5313.jpeg', name: 'jack.', bio: 'full-stack dev and outdoor enthusiast.', side: 'right', objectPosition: 'center 20%' }, // Add objectPosition for right-side profile
+  ]);
+
+  const [showProfileIcon, setShowProfileIcon] = useState(false);
+  const [showProfilePictures, setShowProfilePictures] = useState(false);
 
   useEffect(() => {
     if (!mountRef.current) return;
@@ -215,87 +243,6 @@ export default function Home() {
       (photo as Photo & { mesh: THREE.Mesh, hitboxMesh: THREE.Mesh }).hitboxMesh = hitboxMesh;
     });
 
-    // Force a re-render of the scene
-    renderer.render(scene, camera);
-
-    // Add raycaster for photo hover and click detection
-    const raycaster = new THREE.Raycaster();
-    const mouse = new THREE.Vector2();
-
-    const onTouchStart = (event: TouchEvent) => {
-      event.preventDefault();
-      const touch = event.touches[0];
-      mouse.x = (touch.clientX / window.innerWidth) * 2 - 1;
-      mouse.y = -(touch.clientY / window.innerHeight) * 2 + 1;
-      handleInteraction();
-    };
-
-    const handleInteraction = () => {
-      raycaster.setFromCamera(mouse, camera);
-      const intersects = raycaster.intersectObjects(scene.children, true);
-
-      for (let i = 0; i < intersects.length; i++) {
-        const intersectedObject = intersects[i].object;
-        const clickedPhoto = photos.find(photo => 
-          photo.hitboxMesh === intersectedObject || photo.mesh === intersectedObject
-        );
-        
-        if (clickedPhoto) {
-          handlePhotoClick(clickedPhoto);
-          break;
-        }
-      }
-    };
-
-    const onMouseClick = (event: MouseEvent) => {
-      mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-      mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-      handleInteraction();
-    };
-
-    const onMouseMove = (event: MouseEvent) => {
-      mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-      mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-
-      raycaster.setFromCamera(mouse, camera);
-      const intersects = raycaster.intersectObjects(scene.children, true);
-
-      let hoveredPhotoFound = false;
-      photos.forEach(photo => {
-        if (photo.mesh) {
-          photo.mesh.material = photo.clicked ? clickedMaterial : iconMaterial;
-        }
-      });
-
-      for (let i = 0; i < intersects.length; i++) {
-        const intersectedObject = intersects[i].object;
-        const hoveredPhoto = photos.find(photo => 
-          photo.hitboxMesh === intersectedObject || photo.mesh === intersectedObject
-        );
-        if (hoveredPhoto && hoveredPhoto.mesh) {
-          hoveredPhoto.mesh.material = highlightMaterial;
-          setHoveredPhoto(hoveredPhoto);
-          hoveredPhotoFound = true;
-          document.body.style.cursor = 'pointer';
-          break;
-        }
-      }
-
-      if (!hoveredPhotoFound) {
-        setHoveredPhoto(null);
-        document.body.style.cursor = 'default';
-      }
-
-      renderer.render(scene, camera);
-    };
-
-    if (isMobile) {
-      window.addEventListener('touchstart', onTouchStart);
-    } else {
-      window.addEventListener('click', onMouseClick);
-      window.addEventListener('mousemove', onMouseMove);
-    }
-
     // Add KegStatus to the scene
     if (sceneRef.current && cameraRef.current) {
       const kegStatusElement = <KegStatus 
@@ -311,12 +258,6 @@ export default function Home() {
 
     return () => {
       window.removeEventListener('resize', handleResize);
-      if (isMobile) {
-        window.removeEventListener('touchstart', onTouchStart);
-      } else {
-        window.removeEventListener('click', onMouseClick);
-        window.removeEventListener('mousemove', onMouseMove);
-      }
       mountRef.current?.removeChild(renderer.domElement);
     };
   }, [isMobile, photos, kegLevel, lastPourTime]);
@@ -370,6 +311,10 @@ export default function Home() {
           requestAnimationFrame(zoomAnimation);
         } else {
           setShowCoordinates(true);
+          // Show the profile icon after zooming in
+          setTimeout(() => {
+            setShowProfileIcon(true);
+          }, 1000); // 1 second after zoom completes
         }
 
         rendererRef.current!.render(sceneRef.current!, cameraRef.current!);
@@ -393,6 +338,7 @@ export default function Home() {
         const easeProgress = 1 - Math.pow(1 - progress, 3); // Cubic ease-out
 
         cameraRef.current!.position.lerpVectors(startPosition, targetPosition, easeProgress);
+        controlsRef.current!.target.set(0, 0, 0);
         controlsRef.current!.update();
 
         if (progress < 1) {
@@ -514,6 +460,10 @@ export default function Home() {
     setShowTicketPurchase(false);
   };
 
+  const handleProfileIconClick = () => {
+    setShowProfilePictures(prev => !prev);
+  };
+
   return (
     <>
       <main className="relative bg-black text-white overflow-hidden h-screen">
@@ -540,7 +490,7 @@ export default function Home() {
             className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-blue-500 hover:bg-blue-600 text-white z-50 pointer-events-auto"
             onClick={() => setShowTicketPurchase(true)}
           >
-            Get Tickets
+            the events.
           </Button>
         </div>
         {showCoordinates && (
@@ -601,6 +551,80 @@ export default function Home() {
             <p className="text-sm">{weatherData.description}</p>
           </div>
         )}
+
+        <AnimatePresence>
+          {showProfileIcon && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 20 }}
+              className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50"
+            >
+              <button
+                onClick={handleProfileIconClick}
+                className="bg-white bg-opacity-20 p-2 rounded-full hover:bg-opacity-30 transition-all duration-300"
+              >
+                <FaUsers className="text-white text-2xl" />
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {showProfilePictures && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 20 }}
+              className="fixed bottom-24 left-0 right-0 flex justify-center items-center z-50 px-4"
+            >
+              <div className="flex justify-center items-center space-x-4 max-w-full overflow-x-auto">
+                {profileData.map((profile) => (
+                  <Sheet key={profile.id}>
+                    <SheetTrigger asChild>
+                      <motion.div
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{ delay: 0.2 }}
+                        className="w-12 h-12 rounded-full overflow-hidden cursor-pointer flex-shrink-0"
+                      >
+                        <Image
+                          src={profile.src}
+                          alt={`Profile ${profile.name}`}
+                          width={48}
+                          height={48}
+                          className="object-cover filter grayscale"
+                          style={{ objectPosition: profile.side === 'right' ? profile.objectPosition : 'center' }}
+                        />
+                      </motion.div>
+                    </SheetTrigger>
+                    <SheetContent 
+                      side={profile.side} 
+                      className={`${profile.side === 'bottom' ? 'w-full h-[400px]' : 'w-[300px] sm:w-[400px]'} flex flex-col items-center justify-center`}
+                    >
+                      <div className={`flex ${profile.side === 'bottom' ? 'flex-row' : 'flex-col'} items-center space-y-4 w-full h-full`}>
+                        <div className={`${profile.side === 'bottom' ? 'w-1/2 h-full' : 'w-full h-2/3'} relative`}>
+                          <Image
+                            src={profile.src}
+                            alt={`Profile ${profile.name}`}
+                            layout="fill"
+                            objectFit="cover"
+                            className="filter grayscale"
+                            style={{ objectPosition: profile.side === 'right' ? profile.objectPosition : 'center' }}
+                          />
+                        </div>
+                        <div className={`${profile.side === 'bottom' ? 'w-1/2 pl-4' : 'w-full'} flex flex-col items-center justify-center`}>
+                          <h2 className="text-2xl font-bold">{profile.name}</h2>
+                          <p className="text-center mt-2">{profile.bio}</p>
+                        </div>
+                      </div>
+                    </SheetContent>
+                  </Sheet>
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </main>
       {showTicketPurchase && (
         <TicketPurchase onClose={handleTicketPurchaseClose} />

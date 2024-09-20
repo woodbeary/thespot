@@ -90,7 +90,7 @@ export default function TicketPurchase({ onClose }: { onClose: () => void }) {
   return (
     <div className={modalClass} onClick={onClose}>
       <div className={contentClass} onClick={(e) => e.stopPropagation()}>
-        <h2 className="text-xl md:text-2xl font-bold mb-4">Get Your Ticket</h2>
+        <h2 className="text-xl md:text-2xl font-bold mb-4">the waiver.</h2>
         {isLoading ? (
           <div className="flex flex-col items-center justify-center h-40">
             <ClipLoader color="#ffffff" size={40} />
