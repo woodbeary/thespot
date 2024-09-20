@@ -14,6 +14,7 @@ import { createRoot } from 'react-dom/client';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaUsers } from 'react-icons/fa';
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import DisableSiteModal from '@/components/DisableSiteModal';
 
 // Update the Photo interface
 interface Photo {
@@ -85,6 +86,9 @@ export default function Home() {
 
   const [showProfileIcon, setShowProfileIcon] = useState(false);
   const [showProfilePictures, setShowProfilePictures] = useState(false);
+
+  // Add this new state at the top of your component
+  const [isSiteDisabled, setIsSiteDisabled] = useState(true);
 
   useEffect(() => {
     if (!mountRef.current) return;
@@ -466,6 +470,7 @@ export default function Home() {
 
   return (
     <>
+      {isSiteDisabled && <DisableSiteModal />}
       <main className="relative bg-black text-white overflow-hidden h-screen">
         <div ref={mountRef} className="absolute inset-0" />
         <div className="relative z-10 flex flex-col justify-between h-full p-4 pointer-events-none">
