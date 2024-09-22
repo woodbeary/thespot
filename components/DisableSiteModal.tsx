@@ -1,23 +1,36 @@
-import React from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { useState } from 'react';
+import { Button } from "@/components/ui/button"
 
-const DisableSiteModal: React.FC = () => {
+const DisableSiteModal = () => {
+  const [isVisible, setIsVisible] = useState(true);
+  const [agreed, setAgreed] = useState(false);
+
+  if (!isVisible) return null;
+
   return (
-    <Dialog open={true}>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle className="text-center">Site Permanently Unavailable</DialogTitle>
-        </DialogHeader>
-        <div className="flex flex-col space-y-4 p-4 text-center">
-          <p className="font-bold text-red-600">Trespassers will be prosecuted, I am not joking.</p>
+    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+      <div className="bg-white text-black p-8 rounded-lg max-w-md w-full text-center">
+        <h2 className="text-2xl font-bold mb-4">Private Property Notice</h2>
+        <p className="mb-6">This website is for a private property. Access is by invitation only. No trespassing allowed.</p>
+        <div className="mb-4">
+          <label className="flex items-center justify-center">
+            <input 
+              type="checkbox" 
+              checked={agreed} 
+              onChange={() => setAgreed(!agreed)} 
+              className="mr-2"
+            />
+            I agree to the terms and conditions
+          </label>
         </div>
-      </DialogContent>
-    </Dialog>
+        <Button 
+          onClick={() => setIsVisible(false)} 
+          disabled={!agreed}
+        >
+          Enter Site
+        </Button>
+      </div>
+    </div>
   );
 };
 

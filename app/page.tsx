@@ -79,16 +79,13 @@ export default function Home() {
 
   // Update the profileData state
   const [profileData, setProfileData] = useState<ProfileData[]>([
-    { id: 'IMG_5309', src: '/profile/IMG_5309.jpeg', name: 'danny.', bio: 'passionate about music and working out.', side: 'left' },
-    { id: 'IMG_5311', src: '/profile/IMG_5311.jpeg', name: 'damian.', bio: 'tech with a love for neuroscience.', side: 'bottom' },
-    { id: 'IMG_5313', src: '/profile/IMG_5313.jpeg', name: 'jack.', bio: 'full-stack dev and outdoor enthusiast.', side: 'right', objectPosition: 'center 20%' }, // Add objectPosition for right-side profile
+    { id: 'IMG_5309', src: '/profile/IMG_5309.jpeg', name: 'ped lee.', bio: '🍑', side: 'left' },
+    { id: 'IMG_5311', src: '/profile/IMG_5311.jpeg', name: 'damian.', bio: '"pretty cool guy." - jack', side: 'bottom' },
+    { id: 'IMG_5313', src: '/profile/IMG_5313.jpeg', name: 'jack.', bio: '"web guy" - web guy', side: 'right', objectPosition: 'center 20%' },
   ]);
 
   const [showProfileIcon, setShowProfileIcon] = useState(false);
   const [showProfilePictures, setShowProfilePictures] = useState(false);
-
-  // Add this new state at the top of your component
-  const [isSiteDisabled, setIsSiteDisabled] = useState(true);
 
   useEffect(() => {
     if (!mountRef.current) return;
@@ -470,7 +467,7 @@ export default function Home() {
 
   return (
     <>
-      {isSiteDisabled && <DisableSiteModal />}
+      <DisableSiteModal />
       <main className="relative bg-black text-white overflow-hidden h-screen">
         <div ref={mountRef} className="absolute inset-0" />
         <div className="relative z-10 flex flex-col justify-between h-full p-4 pointer-events-none">
