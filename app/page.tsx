@@ -86,6 +86,8 @@ export default function Home() {
 
   const [showProfileIcon, setShowProfileIcon] = useState(false);
   const [showProfilePictures, setShowProfilePictures] = useState(false);
+  const [showDisableSiteModal, setShowDisableSiteModal] = useState(false);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   useEffect(() => {
     if (!mountRef.current) return;
@@ -257,11 +259,54 @@ export default function Home() {
       root.render(kegStatusElement);
     }
 
+    // Update the click/tap handler for photo icons
+    const handlePhotoClick = (event: MouseEvent | TouchEvent) => {
+      if (showDisableSiteModal) return; // Prevent interaction when modal is open
+
+      event.preventDefault();
+      
+      const mouse = new THREE.Vector2();
+      const raycaster = new THREE.Raycaster();
+
+      // Get the correct client coordinates
+      let clientX: number, clientY: number;
+      if (event instanceof MouseEvent) {
+        clientX = event.clientX;
+        clientY = event.clientY;
+      } else {
+        clientX = event.touches[0].clientX;
+        clientY = event.touches[0].clientY;
+      }
+
+      // Calculate mouse position in normalized device coordinates
+      mouse.x = (clientX / window.innerWidth) * 2 - 1;
+      mouse.y = -(clientY / window.innerHeight) * 2 + 1;
+
+      // Update the picking ray with the camera and mouse position
+      raycaster.setFromCamera(mouse, cameraRef.current!);
+
+      // Calculate objects intersecting the picking ray
+      const intersects = raycaster.intersectObjects(photos.map(photo => photo.hitboxMesh!));
+
+      if (intersects.length > 0) {
+        const clickedPhoto = photos.find(photo => photo.hitboxMesh === intersects[0].object);
+        if (clickedPhoto) {
+          handlePhotoSelection(clickedPhoto);
+        }
+      }
+    };
+
+    // Add event listeners for both mouse and touch events
+    window.addEventListener('click', handlePhotoClick);
+    window.addEventListener('touchend', handlePhotoClick);
+
     return () => {
       window.removeEventListener('resize', handleResize);
       mountRef.current?.removeChild(renderer.domElement);
+      window.removeEventListener('click', handlePhotoClick);
+      window.removeEventListener('touchend', handlePhotoClick);
     };
-  }, [isMobile, photos, kegLevel, lastPourTime]);
+  }, [isMobile, photos, kegLevel, lastPourTime, showDisableSiteModal]);
 
   // Add this new useEffect for fetching weather data
   useEffect(() => {
@@ -294,6 +339,18 @@ export default function Home() {
   };
 
   const handleEnter = () => {
+    setShowDisableSiteModal(true);
+  };
+
+  const handleModalClose = (agreed: boolean) => {
+    setShowDisableSiteModal(false);
+    setAgreedToTerms(agreed);
+    if (agreed) {
+      handleZoomIn();
+    }
+  };
+
+  const handleZoomIn = () => {
     if (cameraRef.current && controlsRef.current) {
       const targetPosition = new THREE.Vector3(8, 3, 8);
       const duration = 2000; // 2 seconds
@@ -353,7 +410,7 @@ export default function Home() {
     }
   };
 
-  const handlePhotoClick = (clickedPhoto: Photo) => {
+  const handlePhotoSelection = (clickedPhoto: Photo) => {
     if (cameraRef.current && controlsRef.current && sceneRef.current) {
       const targetPosition = clickedPhoto.position.clone().add(new THREE.Vector3(0, 0, 2));
       const duration = 1000; // 1 second
@@ -467,8 +524,7 @@ export default function Home() {
 
   return (
     <>
-      <DisableSiteModal />
-      <main className="relative bg-black text-white overflow-hidden h-screen">
+      <main className={`relative bg-black text-white overflow-hidden h-screen ${showDisableSiteModal ? 'pointer-events-none' : ''}`}>
         <div ref={mountRef} className="absolute inset-0" />
         <div className="relative z-10 flex flex-col justify-between h-full p-4 pointer-events-none">
           {!showCoordinates && (
@@ -630,6 +686,12 @@ export default function Home() {
       </main>
       {showTicketPurchase && (
         <TicketPurchase onClose={handleTicketPurchaseClose} />
+      )}
+      {showDisableSiteModal && (
+        <div className="fixed inset-0 z-50">
+          <div className="absolute inset-0 bg-black opacity-50"></div>
+          <DisableSiteModal onClose={handleModalClose} />
+        </div>
       )}
     </>
   );
