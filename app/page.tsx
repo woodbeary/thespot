@@ -46,6 +46,7 @@ interface ProfileData {
   bio: string;
   side: 'left' | 'bottom' | 'right';
   objectPosition?: string;
+  iconSrc?: string;
 }
 
 export default function Home() {
@@ -76,12 +77,13 @@ export default function Home() {
   const [showTicketPurchase, setShowTicketPurchase] = useState(false);
   const [kegLevel, setKegLevel] = useState(75);
   const [lastPourTime, setLastPourTime] = useState('2023-05-01 14:30');
-
+  
   // Update the profileData state
   const [profileData, setProfileData] = useState<ProfileData[]>([
-    { id: 'IMG_5309', src: '/profile/IMG_5309.jpeg', name: 'ped lee.', bio: '🍑', side: 'left' },
+    { id: 'IMG_5309', src: '/profile/IMG_5309.jpeg', name: 'dirty dan.', bio: '🍑', side: 'left' },
     { id: 'IMG_5311', src: '/profile/IMG_5311.jpeg', name: 'damian.', bio: '"pretty cool guy." - jack', side: 'bottom' },
-    { id: 'IMG_5313', src: '/profile/IMG_5313.jpeg', name: 'jack.', bio: '"web guy" - web guy', side: 'right', objectPosition: 'center 20%' },
+    { id: 'IMG_5313', src: '/profile/IMG_5313.jpeg', name: 'jack.', bio: '"web guy" - web guy', side: 'right', objectPosition: 'center 20%', iconSrc: '/profile/jaq.png' },
+    { id: 'jacob.', src: '/profile/jack.jpeg', iconSrc: '/profile/ranch.png', name: 'jacob', bio: '"mmm." - dan', side: 'bottom', objectPosition: 'center 40%' },
   ]);
 
   const [showProfileIcon, setShowProfileIcon] = useState(false);
@@ -259,52 +261,25 @@ export default function Home() {
       root.render(kegStatusElement);
     }
 
-    // Update the click/tap handler for photo icons
-    const handlePhotoClick = (event: MouseEvent | TouchEvent) => {
+    const handleInteraction = (event: MouseEvent | TouchEvent) => {
       if (showDisableSiteModal) return; // Prevent interaction when modal is open
 
-      event.preventDefault();
-      
-      const mouse = new THREE.Vector2();
-      const raycaster = new THREE.Raycaster();
-
-      // Get the correct client coordinates
-      let clientX: number, clientY: number;
-      if (event instanceof MouseEvent) {
-        clientX = event.clientX;
-        clientY = event.clientY;
-      } else {
-        clientX = event.touches[0].clientX;
-        clientY = event.touches[0].clientY;
+      if (event.type === 'touchstart') {
+        event.preventDefault(); // Prevent default touch behavior
       }
 
-      // Calculate mouse position in normalized device coordinates
-      mouse.x = (clientX / window.innerWidth) * 2 - 1;
-      mouse.y = -(clientY / window.innerHeight) * 2 + 1;
-
-      // Update the picking ray with the camera and mouse position
-      raycaster.setFromCamera(mouse, cameraRef.current!);
-
-      // Calculate objects intersecting the picking ray
-      const intersects = raycaster.intersectObjects(photos.map(photo => photo.hitboxMesh!));
-
-      if (intersects.length > 0) {
-        const clickedPhoto = photos.find(photo => photo.hitboxMesh === intersects[0].object);
-        if (clickedPhoto) {
-          handlePhotoSelection(clickedPhoto);
-        }
-      }
+      handlePhotoClick(event);
     };
 
     // Add event listeners for both mouse and touch events
-    window.addEventListener('click', handlePhotoClick);
-    window.addEventListener('touchend', handlePhotoClick);
+    window.addEventListener('click', handleInteraction);
+    window.addEventListener('touchstart', handleInteraction);
 
     return () => {
       window.removeEventListener('resize', handleResize);
       mountRef.current?.removeChild(renderer.domElement);
-      window.removeEventListener('click', handlePhotoClick);
-      window.removeEventListener('touchend', handlePhotoClick);
+      window.removeEventListener('click', handleInteraction);
+      window.removeEventListener('touchstart', handleInteraction);
     };
   }, [isMobile, photos, kegLevel, lastPourTime, showDisableSiteModal]);
 
@@ -522,9 +497,48 @@ export default function Home() {
     setShowProfilePictures(prev => !prev);
   };
 
+  const handlePhotoClick = (event: MouseEvent | TouchEvent) => {
+    const mouse = new THREE.Vector2();
+    const raycaster = new THREE.Raycaster();
+
+    // Get the correct client coordinates
+    let clientX: number, clientY: number;
+    if (event instanceof MouseEvent) {
+      clientX = event.clientX;
+      clientY = event.clientY;
+    } else if (event instanceof TouchEvent) {
+      // Check if there are any touches
+      if (event.touches.length > 0) {
+        clientX = event.touches[0].clientX;
+        clientY = event.touches[0].clientY;
+      } else {
+        return;
+      }
+    } else {
+      return;
+    }
+
+    // Calculate mouse position in normalized device coordinates
+    mouse.x = (clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(clientY / window.innerHeight) * 2 + 1;
+
+    // Update the picking ray with the camera and mouse position
+    raycaster.setFromCamera(mouse, cameraRef.current!);
+
+    // Calculate objects intersecting the picking ray
+    const intersects = raycaster.intersectObjects(photos.map(photo => photo.hitboxMesh!));
+
+    if (intersects.length > 0) {
+      const clickedPhoto = photos.find(photo => photo.hitboxMesh === intersects[0].object);
+      if (clickedPhoto) {
+        handlePhotoSelection(clickedPhoto);
+      }
+    }
+  };
+
   return (
     <>
-      <main className={`relative bg-black text-white overflow-hidden h-screen ${showDisableSiteModal ? 'pointer-events-none' : ''}`}>
+      <main className={`relative bg-black text-white overflow-hidden h-screen ${showDisableSiteModal ? 'pointer-events-none' : 'pointer-events-auto'}`}>
         <div ref={mountRef} className="absolute inset-0" />
         <div className="relative z-10 flex flex-col justify-between h-full p-4 pointer-events-none">
           {!showCoordinates && (
@@ -647,7 +661,7 @@ export default function Home() {
                         className="w-12 h-12 rounded-full overflow-hidden cursor-pointer flex-shrink-0"
                       >
                         <Image
-                          src={profile.src}
+                          src={profile.iconSrc || profile.src}
                           alt={`Profile ${profile.name}`}
                           width={48}
                           height={48}
