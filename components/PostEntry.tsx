@@ -6,10 +6,10 @@ interface PostEntryProps {
 }
 
 const PostEntry: React.FC<PostEntryProps> = ({ onBack }) => {
-  const coordinates = "33.884283, -117.472665";
-
   const handleNavigate = () => {
-    const url = `https://www.google.com/maps/search/?api=1&query=${coordinates}`;
+    const lat = process.env.NEXT_PUBLIC_LAT;
+    const lng = process.env.NEXT_PUBLIC_LNG;
+    const url = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
     window.open(url, '_blank');
   };
 
@@ -21,12 +21,12 @@ const PostEntry: React.FC<PostEntryProps> = ({ onBack }) => {
         onClick={onBack}
       />
       <p className="mb-8 text-lg">End of Victoria Ave</p>
-      <p 
+      <button 
         className="text-lg cursor-pointer hover:underline"
         onClick={handleNavigate}
       >
-        {coordinates}
-      </p>
+        View Location
+      </button>
     </div>
   );
 };

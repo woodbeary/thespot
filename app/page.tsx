@@ -69,7 +69,10 @@ export default function Home() {
   const [hoveredPhoto, setHoveredPhoto] = useState<Photo | null>(null);
 
   const [showCoordinates, setShowCoordinates] = useState(false);
-  const coordinates = { lat: 33.8842844, lng: -117.4729111 };
+  const coordinates = { 
+    lat: process.env.NEXT_PUBLIC_LAT ? parseFloat(process.env.NEXT_PUBLIC_LAT) : 0, 
+    lng: process.env.NEXT_PUBLIC_LNG ? parseFloat(process.env.NEXT_PUBLIC_LNG) : 0 
+  };
 
   // Add this new state for weather data
   const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
@@ -86,7 +89,7 @@ export default function Home() {
     { id: 'jacob.', src: '/profile/jack.jpeg', iconSrc: '/profile/ranch.png', name: 'jacob', bio: '"mmm." - dan', side: 'bottom', objectPosition: 'center 40%' },
   ]);
 
-  const [showProfileIcon, setShowProfileIcon] = useState(false);
+  const [showProfileIcon, setShowProfileIcon] = useState(true);
   const [showProfilePictures, setShowProfilePictures] = useState(false);
   const [showDisableSiteModal, setShowDisableSiteModal] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
@@ -287,7 +290,9 @@ export default function Home() {
   useEffect(() => {
     const fetchWeatherData = async () => {
       try {
-        const response = await fetch('https://api.open-meteo.com/v1/forecast?latitude=33.95&longitude=-117.40&current_weather=true&temperature_unit=fahrenheit');
+        const response = await fetch(
+          `https://api.open-meteo.com/v1/forecast?latitude=${process.env.NEXT_PUBLIC_LAT}&longitude=${process.env.NEXT_PUBLIC_LNG}&current_weather=true&temperature_unit=fahrenheit`
+        );
         const data = await response.json();
         setWeatherData({
           temperature: data.current_weather.temperature,
@@ -328,14 +333,14 @@ export default function Home() {
   const handleZoomIn = () => {
     if (cameraRef.current && controlsRef.current) {
       const targetPosition = new THREE.Vector3(8, 3, 8);
-      const duration = 2000; // 2 seconds
+      const duration = 2000;
       const startPosition = cameraRef.current.position.clone();
       const startTime = Date.now();
 
       const zoomAnimation = () => {
         const now = Date.now();
         const progress = Math.min((now - startTime) / duration, 1);
-        const easeProgress = 1 - Math.pow(1 - progress, 3); // Cubic ease-out
+        const easeProgress = 1 - Math.pow(1 - progress, 3);
 
         cameraRef.current!.position.lerpVectors(startPosition, targetPosition, easeProgress);
         controlsRef.current!.update();
@@ -344,10 +349,6 @@ export default function Home() {
           requestAnimationFrame(zoomAnimation);
         } else {
           setShowCoordinates(true);
-          // Show the profile icon after zooming in
-          setTimeout(() => {
-            setShowProfileIcon(true);
-          }, 1000); // 1 second after zoom completes
         }
 
         rendererRef.current!.render(sceneRef.current!, cameraRef.current!);

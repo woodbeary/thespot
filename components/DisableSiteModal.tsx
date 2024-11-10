@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Button } from "@/components/ui/button"
-import { X } from 'lucide-react'; // Import the X icon from lucide-react
+import { Input } from "@/components/ui/input"
+import { X } from 'lucide-react';
 
 interface DisableSiteModalProps {
   onClose: (agreed: boolean) => void;
@@ -8,9 +9,16 @@ interface DisableSiteModalProps {
 
 const DisableSiteModal: React.FC<DisableSiteModalProps> = ({ onClose }) => {
   const [agreed, setAgreed] = useState(false);
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
 
   const handleEnter = () => {
-    onClose(agreed);
+    // Check if password matches environment variable
+    if (password === process.env.NEXT_PUBLIC_SITE_PASSWORD) {
+      onClose(agreed);
+    } else {
+      setError('Incorrect password');
+    }
   };
 
   const handleClose = () => {
@@ -29,6 +37,21 @@ const DisableSiteModal: React.FC<DisableSiteModalProps> = ({ onClose }) => {
         </button>
         <h2 className="text-2xl font-bold mb-4">Private Property Notice</h2>
         <p className="mb-6">This website is for a private property. Access is by invitation only. No trespassing allowed.</p>
+        
+        <div className="mb-4">
+          <Input
+            type="password"
+            value={password}
+            onChange={(e) => {
+              setPassword(e.target.value);
+              setError('');
+            }}
+            placeholder="Enter password"
+            className="mb-2"
+          />
+          {error && <p className="text-red-500 text-sm">{error}</p>}
+        </div>
+
         <div className="mb-4">
           <label className="flex items-center justify-center">
             <input 
@@ -40,9 +63,10 @@ const DisableSiteModal: React.FC<DisableSiteModalProps> = ({ onClose }) => {
             I agree to the terms and conditions
           </label>
         </div>
+
         <Button 
           onClick={handleEnter} 
-          disabled={!agreed}
+          disabled={!agreed || !password}
         >
           Enter Site
         </Button>
